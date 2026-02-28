@@ -1,0 +1,999 @@
+package com.avinashpatil.app.automessage.ui.screens.messages
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.Message
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Warning
+
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.avinashpatil.app.automessage.data.entity.CustomMessageEntity
+import com.avinashpatil.app.automessage.ui.components.GlassCard
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateContentSize
+import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
+import com.avinashpatil.app.automessage.ui.theme.NeoLightBackground
+import com.avinashpatil.app.automessage.ui.theme.NeoSurface
+import com.avinashpatil.app.automessage.ui.theme.NeoPrimaryText
+import com.avinashpatil.app.automessage.ui.theme.NeoSecondaryText
+import com.avinashpatil.app.automessage.ui.theme.NeoAccent
+import com.avinashpatil.app.automessage.ui.theme.NeumorphicCard
+import com.avinashpatil.app.automessage.ui.theme.NeumorphicButton
+import com.avinashpatil.app.automessage.ui.components.StandardTopAppBar
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MessagesScreen(
+    viewModel: MessagesViewModel = hiltViewModel()
+) {
+    val messages by viewModel.messages.collectAsState()
+    val defaultMessage by viewModel.defaultMessage.collectAsState()
+    
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf<CustomMessageEntity?>(null) }
+    
+    Scaffold(
+        topBar = {
+            StandardTopAppBar(
+                title = "Message Templates",
+                actions = {
+                    NeumorphicCard(
+                        onClick = { showAddDialog = true },
+                        modifier = Modifier.size(40.dp),
+                        cornerRadius = 20.dp,
+                        elevation = 6.dp,
+                        backgroundColor = NeoAccent
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            NeumorphicButton(
+                text = "Add",
+                onClick = { showAddDialog = true }
+            )
+        },
+        modifier = Modifier
+            .fillMaxSize()
+            .background(NeoLightBackground)
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .background(NeoLightBackground)
+        ) {
+            if (messages.isEmpty()) {
+                EmptyState()
+            } else {
+                MessageList(
+                    messages = messages,
+                    defaultMessage = defaultMessage,
+                    onSetDefault = { message ->
+                        viewModel.setDefaultMessage(message.id)
+                    },
+                    onEdit = { message ->
+                        showEditDialog = message
+                    },
+                    onDelete = { message ->
+                        viewModel.deleteMessage(message)
+                    }
+                )
+            }
+        }
+    }
+    
+    // Add message dialog
+    if (showAddDialog) {
+        AddMessageDialog(
+            onDismiss = { showAddDialog = false },
+            onSave = { title, content ->
+                viewModel.addMessage(title, content)
+                showAddDialog = false
+            }
+        )
+    }
+    
+    // Edit message dialog
+    if (showEditDialog != null) {
+        EditMessageDialog(
+            message = showEditDialog!!,
+            onDismiss = { showEditDialog = null },
+            onSave = { title, content ->
+                viewModel.updateMessage(showEditDialog!!.copy(title = title, body = content))
+                showEditDialog = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        // Enhanced empty state card with better visual hierarchy
+        NeumorphicCard(
+            modifier = Modifier.padding(32.dp),
+            cornerRadius = 24.dp,
+            elevation = 12.dp,
+            backgroundColor = NeoSurface
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Enhanced icon with background
+                NeumorphicCard(
+                    modifier = Modifier.size(80.dp),
+                    cornerRadius = 40.dp,
+                    elevation = 6.dp,
+                    backgroundColor = NeoAccent.copy(alpha = 0.1f)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Message,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = NeoAccent
+                        )
+                    }
+                }
+                
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "No message templates yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = NeoPrimaryText,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Tap the + button to create your first template",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = NeoSecondaryText
+                    )
+                }
+                
+                // Enhanced action hint
+                NeumorphicCard(
+                    modifier = Modifier.padding(top = 8.dp),
+                    cornerRadius = 16.dp,
+                    elevation = 4.dp,
+                    backgroundColor = NeoAccent.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            tint = NeoAccent,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Create Template",
+                            color = NeoAccent,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MessageList(
+    messages: List<CustomMessageEntity>,
+    defaultMessage: CustomMessageEntity?,
+    onSetDefault: (CustomMessageEntity) -> Unit,
+    onEdit: (CustomMessageEntity) -> Unit,
+    onDelete: (CustomMessageEntity) -> Unit
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(messages) { message ->
+            MessageItem(
+                message = message,
+                isDefault = message.id == defaultMessage?.id,
+                onSetDefault = { onSetDefault(message) },
+                onEdit = { onEdit(message) },
+                onDelete = { onDelete(message) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MessageItem(
+    message: CustomMessageEntity,
+    isDefault: Boolean,
+    onSetDefault: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var offsetX by remember { mutableStateOf(0f) }
+    val maxSwipe = 120f
+    val dismissThreshold = 80f
+    var isSwiping by remember { mutableStateOf(false) }
+    
+    val animatedOffsetX by animateFloatAsState(
+        targetValue = offsetX,
+        animationSpec = tween(durationMillis = 300),
+        label = "swipe_offset"
+    )
+
+    Box(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Background swipe actions
+        if (offsetX < -dismissThreshold) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Edit Action
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(end = 16.dp)
+                ) {
+                    NeumorphicCard(
+                        modifier = Modifier.size(56.dp),
+                        cornerRadius = 28.dp,
+                        elevation = 6.dp,
+                        backgroundColor = Color(0xFF2196F3).copy(alpha = 0.15f),
+                        onClick = { 
+                            onEdit()
+                            offsetX = 0f
+                        }
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = Color(0xFF2196F3),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Edit",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF2196F3),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                // Delete Action
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(end = 16.dp)
+                ) {
+                    NeumorphicCard(
+                        modifier = Modifier.size(56.dp),
+                        cornerRadius = 28.dp,
+                        elevation = 6.dp,
+                        backgroundColor = Color(0xFFF44336).copy(alpha = 0.15f),
+                        onClick = { 
+                            onDelete()
+                            offsetX = 0f
+                        }
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = Color(0xFFF44336),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Delete",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFF44336),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+        
+        // Enhanced message card with consistent sizing and visual hierarchy
+        NeumorphicCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(animatedOffsetX.roundToInt(), 0) }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { isSwiping = true },
+                        onDragEnd = {
+                            isSwiping = false
+                            when {
+                                offsetX < -dismissThreshold -> {
+                                    // Keep open
+                                    offsetX = -maxSwipe
+                                }
+                                else -> {
+                                    // Snap back
+                                    offsetX = 0f
+                                }
+                            }
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            val newOffset = offsetX + dragAmount
+                            offsetX = newOffset.coerceIn(-maxSwipe, 0f)
+                        }
+                    )
+                },
+            cornerRadius = 20.dp,
+            elevation = if (isDefault) 8.dp else 6.dp,
+            backgroundColor = if (isDefault) NeoAccent.copy(alpha = 0.15f) else NeoSurface
+        ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            // Enhanced header with title and default indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = message.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isDefault) NeoAccent else NeoPrimaryText,
+                        lineHeight = 24.sp
+                    )
+                    
+                    // Enhanced default indicator with animation
+                    val badgeScale by animateFloatAsState(
+                        targetValue = if (isDefault) 1f else 0.9f,
+                        animationSpec = tween(durationMillis = 200)
+                    )
+                    AnimatedVisibility(
+                        visible = isDefault,
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut()
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Default",
+                                tint = NeoAccent,
+                                modifier = Modifier.size(16.dp).scale(badgeScale)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Default Template",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = NeoAccent,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+                
+                // Enhanced action buttons with consistent styling
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Edit button
+                    NeumorphicCard(
+                        modifier = Modifier.size(36.dp),
+                        cornerRadius = 18.dp,
+                        elevation = 3.dp,
+                        backgroundColor = NeoSecondaryText.copy(alpha = 0.1f),
+                        onClick = onEdit
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = NeoSecondaryText,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    
+                    // Delete button
+                    NeumorphicCard(
+                        modifier = Modifier.size(36.dp),
+                        cornerRadius = 18.dp,
+                        elevation = 3.dp,
+                        backgroundColor = Color.Red.copy(alpha = 0.1f),
+                        onClick = onDelete
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = Color.Red,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Enhanced message content
+            Text(
+                text = message.body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isDefault) NeoPrimaryText else NeoSecondaryText,
+                modifier = Modifier.fillMaxWidth(),
+                lineHeight = 20.sp
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Enhanced Set as Default button (only for non-default messages)
+            AnimatedVisibility(
+                visible = !isDefault,
+                enter = fadeIn(animationSpec = tween(200)),
+                exit = fadeOut(animationSpec = tween(150))
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    NeumorphicCard(
+                        modifier = Modifier.height(40.dp),
+                        cornerRadius = 20.dp,
+                        elevation = 4.dp,
+                        backgroundColor = NeoAccent.copy(alpha = 0.1f),
+                        onClick = onSetDefault
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Set Default",
+                                    tint = NeoAccent,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Set as Default",
+                                    color = NeoAccent,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+                        elevation = 3.dp,
+                        backgroundColor = NeoSecondaryText.copy(alpha = 0.1f),
+                        onClick = onEdit
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = NeoSecondaryText,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    
+                    // Delete button
+                    NeumorphicCard(
+                        modifier = Modifier.size(36.dp),
+                        cornerRadius = 18.dp,
+                        elevation = 3.dp,
+                        backgroundColor = Color.Red.copy(alpha = 0.1f),
+                        onClick = onDelete
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = Color.Red,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Enhanced message content
+            Text(
+                text = message.body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isDefault) NeoPrimaryText else NeoSecondaryText,
+                modifier = Modifier.fillMaxWidth(),
+                lineHeight = 20.sp
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Enhanced Set as Default button (only for non-default messages)
+            AnimatedVisibility(
+                visible = !isDefault,
+                enter = fadeIn(animationSpec = tween(200)),
+                exit = fadeOut(animationSpec = tween(150))
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    NeumorphicCard(
+                        modifier = Modifier.height(40.dp),
+                        cornerRadius = 20.dp,
+                        elevation = 4.dp,
+                        backgroundColor = NeoAccent.copy(alpha = 0.1f),
+                        onClick = onSetDefault
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Set Default",
+                                    tint = NeoAccent,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Set as Default",
+                                    color = NeoAccent,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddMessageDialog(
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+    
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        // Enhanced dialog card with better visual hierarchy
+        NeumorphicCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            cornerRadius = 24.dp,
+            elevation = 16.dp,
+            backgroundColor = NeoSurface
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Enhanced dialog header
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Dialog icon
+                    NeumorphicCard(
+                        modifier = Modifier.size(48.dp),
+                        cornerRadius = 24.dp,
+                        elevation = 6.dp,
+                        backgroundColor = NeoAccent.copy(alpha = 0.1f)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Message,
+                                contentDescription = "Add Template",
+                                tint = NeoAccent,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Text(
+                        text = "Add Message Template", 
+                        style = MaterialTheme.typography.titleLarge,
+                        color = NeoPrimaryText,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    
+                    Text(
+                        text = "Create a new message template for quick messaging",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = NeoSecondaryText,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                
+                // Enhanced form fields
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Template Title", color = NeoPrimaryText) },
+                        placeholder = { Text("e.g., Meeting Reminder", color = NeoSecondaryText.copy(alpha = 0.5f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Message Content", color = NeoPrimaryText) },
+                        placeholder = { Text("Enter your message here...", color = NeoSecondaryText.copy(alpha = 0.5f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 4,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText)
+                    )
+                }
+                
+                // Enhanced action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    NeumorphicCard(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        cornerRadius = 24.dp,
+                        elevation = 4.dp,
+                        backgroundColor = NeoSecondaryText.copy(alpha = 0.1f),
+                        onClick = onDismiss
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                color = NeoSecondaryText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    NeumorphicCard(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        cornerRadius = 24.dp,
+                        elevation = 4.dp,
+                        backgroundColor = NeoAccent,
+                        onClick = { onSave(title, content) }
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Save",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Save Template",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditMessageDialog(
+    message: CustomMessageEntity,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
+    var title by remember { mutableStateOf(message.title) }
+    var content by remember { mutableStateOf(message.body) }
+    
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        // Enhanced dialog card with better visual hierarchy
+        NeumorphicCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            cornerRadius = 24.dp,
+            elevation = 16.dp,
+            backgroundColor = NeoSurface
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Enhanced dialog header
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Dialog icon
+                    NeumorphicCard(
+                        modifier = Modifier.size(48.dp),
+                        cornerRadius = 24.dp,
+                        elevation = 6.dp,
+                        backgroundColor = NeoAccent.copy(alpha = 0.1f)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Template",
+                                tint = NeoAccent,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Text(
+                        text = "Edit Message Template", 
+                        style = MaterialTheme.typography.titleLarge,
+                        color = NeoPrimaryText,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    
+                    Text(
+                        text = "Update your message template",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = NeoSecondaryText,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                
+                // Enhanced form fields
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Template Title", color = NeoPrimaryText) },
+                        placeholder = { Text("e.g., Meeting Reminder", color = NeoSecondaryText.copy(alpha = 0.5f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Message Content", color = NeoPrimaryText) },
+                        placeholder = { Text("Enter your message here...", color = NeoSecondaryText.copy(alpha = 0.5f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 4,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText)
+                    )
+                }
+                
+                // Enhanced action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    NeumorphicCard(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        cornerRadius = 24.dp,
+                        elevation = 4.dp,
+                        backgroundColor = NeoSecondaryText.copy(alpha = 0.1f),
+                        onClick = onDismiss
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                color = NeoSecondaryText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    NeumorphicCard(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        cornerRadius = 24.dp,
+                        elevation = 4.dp,
+                        backgroundColor = NeoAccent,
+                        onClick = { onSave(title, content) }
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Save",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Update Template",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
