@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.AutoMessage" parent="android:Theme.Material.Light.NoActionBar" />
+    
+    <!-- Splash Screen Theme -->
+    <style name="Theme.AutoMessage.Splash" parent="Theme.AutoMessage">
+        <!-- Set the splash screen background to primary container color -->
+        <item name="android:windowBackground">@color/primary_container</item>
+        <!-- Remove action bar for splash -->
+        <item name="android:windowNoTitle">true</item>
+        <!-- Make the splash screen full screen -->
+        <item name="android:windowFullscreen">true</item>
+        <!-- Ensure smooth transition -->
+        <item name="android:windowContentTransitions">true</item>
+    </style>
+    
+</resources>

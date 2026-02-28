@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- AutoMessage App Colors -->
+    <color name="primary_container">#FFE8DEF8</color>
+    <color name="primary">#FF6750A4</color>
+    <color name="on_primary">#FFFFFFFF</color>
+    
+    <!-- Neumorphic custom toast colors -->
+    <color name="neo_surface">#FFF6FAFF</color>
+    <color name="neo_primary_text">#FF2E3A59</color>
+</resources>
