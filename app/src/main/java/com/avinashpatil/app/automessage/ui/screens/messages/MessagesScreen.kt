@@ -70,7 +70,11 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import com.avinashpatil.app.automessage.ui.theme.NeoLightBackground
 import com.avinashpatil.app.automessage.ui.theme.NeoSurface
 import com.avinashpatil.app.automessage.ui.theme.NeoPrimaryText
@@ -511,6 +515,7 @@ private fun AddMessageDialog(
 ) {
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
     
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         NeumorphicCard(
@@ -522,29 +527,42 @@ private fun AddMessageDialog(
             backgroundColor = NeoSurface
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.9f)
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = "Add Message Template", 
-                    style = MaterialTheme.typography.titleMedium,
-                    color = NeoPrimaryText
-                )
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title", color = NeoPrimaryText) },
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText)
-                )
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("Message Content", color = NeoPrimaryText) },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText)
-                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Add Message Template",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = NeoPrimaryText
+                    )
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Title", color = NeoPrimaryText) },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Message Content", color = NeoPrimaryText) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 120.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText)
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -574,6 +592,7 @@ private fun EditMessageDialog(
 ) {
     var title by remember { mutableStateOf(message.title) }
     var content by remember { mutableStateOf(message.body) }
+    val scrollState = rememberScrollState()
     
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         NeumorphicCard(
@@ -585,29 +604,42 @@ private fun EditMessageDialog(
             backgroundColor = NeoSurface
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.9f)
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = "Edit Message Template", 
-                    style = MaterialTheme.typography.titleMedium,
-                    color = NeoPrimaryText
-                )
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Title", color = NeoPrimaryText) },
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText)
-                )
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("Message Content", color = NeoPrimaryText) },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText)
-                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Edit Message Template",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = NeoPrimaryText
+                    )
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Title", color = NeoPrimaryText) },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Message Content", color = NeoPrimaryText) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 120.dp),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NeoPrimaryText)
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
