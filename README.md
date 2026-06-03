@@ -1,7 +1,5 @@
 # Auto Messaging - Sales & Logistics Automation Platform
 
-<div align="center">
-
 ![Platform Banner](https://github.com/Avi6855/AutoMessaging/blob/main/Auto_Messaging_App_Banner.png)
 
 ## Overview
