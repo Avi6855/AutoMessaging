@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Platform Banner]()
+![Platform Banner](https://github.com/Avi6855/AutoMessaging/blob/main/Auto_Messaging_App_Banner.png)
 
 ## Overview
 Auto Message is a professional Android application designed to automate communication for sales professionals, delivery personnel, and supply chain operators. Built with Kotlin and Jetpack Compose, it acts as a reliable communication assistant that automatically replies to received calls with context-specific, customizable message templates, ensuring that no business lead or logistical update goes unaddressed when you are occupied.
