@@ -63,7 +63,7 @@ Cloud/Deployment:
 ![Analytics](docs/screenshots/analytics.png)
 
 ## Demo Video
-[Watch Demo Video](https://YOUR_DEMO_VIDEO_URL_HERE)
+[Watch Demo Video](https://drive.google.com/file/d/10JKgQ0Il-legKnyOIr0kxSIhcdXldkxz/view?usp=sharing)
 
 ## Installation
 1. **Prerequisites**: Ensure you have Android Studio Arctic Fox (or later) and JDK 11+ installed.
