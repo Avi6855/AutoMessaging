@@ -1,4 +1,8 @@
-# Auto Message - Sales & Logistics Automation Platform
+# Auto Messaging - Sales & Logistics Automation Platform
+
+<div align="center">
+
+![Platform Banner]()
 
 ## Overview
 Auto Message is a professional Android application designed to automate communication for sales professionals, delivery personnel, and supply chain operators. Built with Kotlin and Jetpack Compose, it acts as a reliable communication assistant that automatically replies to received calls with context-specific, customizable message templates, ensuring that no business lead or logistical update goes unaddressed when you are occupied.
@@ -47,20 +51,23 @@ Cloud/Deployment:
 
 ## Screenshots
 
-### Dashboard
-![Dashboard](docs/screenshots/dashboard.png)
+### Splash Screen
+![Splash Screen](https://github.com/Avi6855/AutoMessaging/blob/main/Splash_Screen.jpeg)
 
-### Sales Module
-*(Maps to Contacts & Groups Management)*
-![Sales Module](docs/screenshots/sales.png)
+### Auto Messaging Screen
+![Auto Messaging Screen](https://github.com/Avi6855/AutoMessaging/blob/main/Auto_Messaging_Screen.jpeg)
 
-### Inventory Module
-*(Maps to Message Templates Management)*
-![Inventory](docs/screenshots/inventory.png)
+### Message Detail Screen
+![Message Detail Screen](https://github.com/Avi6855/AutoMessaging/blob/main/Message_Detail_Screen.jpeg)
 
-### Analytics
-*(Maps to Call History & Logs)*
-![Analytics](docs/screenshots/analytics.png)
+### Group & Bulk Message Send Screen
+![Group & Bulk Message Send Screen](https://github.com/Avi6855/AutoMessaging/blob/main/Group_%26_Bulk_Message_Send_Screen.jpeg)
+
+### All Message Templates Screen
+![All Message Templates Screen](https://github.com/Avi6855/AutoMessaging/blob/main/All_Message_Templates_Screen.jpeg)
+
+### Add Message Screen
+![Add Message Screen](https://github.com/Avi6855/AutoMessaging/blob/main/Add_Message_Screen.jpeg)
 
 ## Demo Video
 [Watch Demo Video](https://drive.google.com/file/d/10JKgQ0Il-legKnyOIr0kxSIhcdXldkxz/view?usp=sharing)
