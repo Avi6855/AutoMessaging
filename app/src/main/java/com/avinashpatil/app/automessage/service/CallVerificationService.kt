@@ -26,6 +26,7 @@ import com.avinashpatil.app.automessage.utils.CallLogHelper
 class CallVerificationService : Service() {
     @Inject lateinit var autoReplyRepository: AutoReplyRepository
     @Inject lateinit var discrepancyRepository: DiscrepancyRepository
+    @Inject lateinit var autoMessagingManager: AutoMessagingManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -37,6 +38,12 @@ class CallVerificationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        val enabled = try { autoMessagingManager.isAutoMessagingEnabled() } catch (_: Exception) { true }
+        if (!enabled) {
+            android.util.Log.d(TAG, "AUTO_MSG: verification service not started because automation disabled")
+            stopSelf()
+            return
+        }
         createNotificationChannel()
         startForeground(NOTIF_ID, createNotification())
         scope.launch { verificationLoop() }

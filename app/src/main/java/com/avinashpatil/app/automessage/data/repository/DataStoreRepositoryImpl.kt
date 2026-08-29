@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,17 +18,34 @@ class DataStoreRepositoryImpl @Inject constructor(
 ) : DataStoreRepository {
     
     companion object {
+        val AUTO_MESSAGING_ENABLED = booleanPreferencesKey("auto_messaging_enabled")
         val AUTO_REPLY_ENABLED = booleanPreferencesKey("auto_reply_enabled")
         val AUTO_REPLY_DELAY = intPreferencesKey("auto_reply_delay")
         val DEFAULT_MESSAGE_ID = longPreferencesKey("default_message_id")
         val DARK_MODE_ENABLED = booleanPreferencesKey("dark_mode_enabled")
         val FIRST_TIME_USER = booleanPreferencesKey("first_time_user")
-        // New: group auto-reply toggle
         val GROUP_AUTO_REPLY_ENABLED = booleanPreferencesKey("group_auto_reply_enabled")
-        // Notification sound toggle
         val NOTIFICATION_SOUND_ENABLED = booleanPreferencesKey("notification_sound_enabled")
         
         const val DEFAULT_DELAY_SECONDS = 10
+    }
+
+    override suspend fun saveAutoMessagingEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[AUTO_MESSAGING_ENABLED] = enabled
+        }
+    }
+
+    override fun isAutoMessagingEnabled(): Flow<Boolean> {
+        return dataStore.data.map { preferences ->
+            preferences[AUTO_MESSAGING_ENABLED] ?: true
+        }
+    }
+
+    override suspend fun getAutoMessagingEnabledOnce(): Boolean {
+        return dataStore.data.map { preferences ->
+            preferences[AUTO_MESSAGING_ENABLED] ?: true
+        }.first()
     }
 
     override suspend fun saveAutoReplyEnabled(enabled: Boolean) {

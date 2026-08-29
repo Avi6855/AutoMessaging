@@ -53,7 +53,7 @@ fun BottomNavigationBar(
         BottomNavItem.Recent,
         BottomNavItem.Contacts,
         BottomNavItem.Messages,
-        //BottomNavItem.Settings
+        BottomNavItem.Settings
     )
     
     // Neumorphic bottom navigation container
@@ -157,12 +157,10 @@ sealed class BottomNavItem(
         icon = Icons.AutoMirrored.Filled.Message,
         route = "messages"
     )
-    /*
+
     object Settings : BottomNavItem(
         title = "Settings",
         icon = Icons.Filled.Settings,
         route = "settings"
     )
-
-     */
 }

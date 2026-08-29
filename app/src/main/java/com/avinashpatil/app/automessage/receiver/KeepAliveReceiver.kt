@@ -6,10 +6,23 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.avinashpatil.app.automessage.service.CallDetectionService
+import com.avinashpatil.app.automessage.utils.AutoMessagingStateChecker
 
 class KeepAliveReceiver : BroadcastReceiver() {
+    companion object {
+        private const val TAG = "KeepAliveReceiver"
+    }
+
     override fun onReceive(context: Context, intent: Intent?) {
-        Log.d("KeepAliveReceiver", "KeepAlive ping received: ${intent?.action}")
+        val enabled = AutoMessagingStateChecker.isAutoMessagingEnabled(context)
+        Log.d(TAG, "AUTO_MSG: keepalive received, autoMessaging=$enabled")
+
+        if (!enabled) {
+            Log.d(TAG, "AUTO_MSG: recovery skipped because automation disabled")
+            return
+        }
+
+        Log.d(TAG, "KeepAlive ping received: ${intent?.action}")
         try {
             val serviceIntent = Intent(context, CallDetectionService::class.java)
             try {
@@ -19,7 +32,6 @@ class KeepAliveReceiver : BroadcastReceiver() {
                     context.startService(serviceIntent)
                 }
             } catch (e: Exception) {
-                // If still blocked, reschedule once more with a slightly longer delay
                 try {
                     val am = context.getSystemService(android.app.AlarmManager::class.java)
                     val pi = android.app.PendingIntent.getBroadcast(
@@ -46,7 +58,7 @@ class KeepAliveReceiver : BroadcastReceiver() {
                 } catch (_: Exception) {}
             }
         } catch (e: Exception) {
-            Log.e("KeepAliveReceiver", "Failed to (re)start CallDetectionService", e)
+            Log.e(TAG, "Failed to (re)start CallDetectionService", e)
         }
     }
 

@@ -29,30 +29,34 @@ import com.avinashpatil.app.automessage.ui.theme.AutoMessageTheme
 import com.avinashpatil.app.automessage.utils.PermissionManager
 import com.avinashpatil.app.automessage.ui.theme.NeoLightBackground
 import com.avinashpatil.app.automessage.ui.theme.NeoSurface
+import com.avinashpatil.app.automessage.service.AutoMessagingManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    
+
+    @Inject lateinit var autoMessagingManager: AutoMessagingManager
+
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val allGranted = permissions.all { it.value }
         if (allGranted) {
             try {
-                android.widget.Toast.makeText(this, "✅ SMS permission granted successfully.", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(this, "SMS permission granted successfully.", android.widget.Toast.LENGTH_SHORT).show()
             } catch (_: Exception) { }
-            // Start service so auto-reply works without opening app
-            try {
-                val serviceIntent = android.content.Intent(this, com.avinashpatil.app.automessage.service.CallDetectionService::class.java)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    startForegroundService(serviceIntent)
-                } else {
-                    startService(serviceIntent)
-                }
-            } catch (_: Exception) { }
+            if (autoMessagingManager.isAutoMessagingEnabled()) {
+                try {
+                    val serviceIntent = android.content.Intent(this, com.avinashpatil.app.automessage.service.CallDetectionService::class.java)
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
+                } catch (_: Exception) { }
+            }
         } else {
-            // If any permission denied, open app settings to grant permanently
             try {
                 val rm = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                     getSystemService(android.app.role.RoleManager::class.java)
