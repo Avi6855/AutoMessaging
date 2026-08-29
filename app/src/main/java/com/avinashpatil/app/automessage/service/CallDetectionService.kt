@@ -58,9 +58,9 @@ class CallDetectionService : Service() {
     @Inject lateinit var messageRepository: MessageRepository
     @Inject lateinit var autoReplyRepository: AutoReplyRepository
     @Inject lateinit var groupRepository: GroupRepository
+    @Inject lateinit var autoMessagingManager: AutoMessagingManager
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    // Prevent duplicate sends across OFFHOOK/IDLE/outgoing flows
     private val recentlySent = ConcurrentHashMap<String, Long>()
     private val answeredNumbers = ConcurrentHashMap<String, Long>()
     private val callTypeByNumber = ConcurrentHashMap<String, String>()
@@ -243,8 +243,16 @@ class CallDetectionService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        // Auto-enable auto-reply on first run
+        android.util.Log.d(TAG, "AUTO_MSG: service starting")
+
         serviceScope.launch {
+            val enabled = autoMessagingManager.isAutoMessagingEnabled()
+            if (!enabled) {
+                android.util.Log.d(TAG, "AUTO_MSG: service not started because automation disabled")
+                stopSelf()
+                return@launch
+            }
+
             try {
                 val first = dataStoreRepository.isFirstTimeUser().first()
                 if (first) {
@@ -253,12 +261,15 @@ class CallDetectionService : Service() {
                     android.util.Log.d(TAG, "First run: auto-reply enabled by default")
                 }
             } catch (_: Exception) { }
-        }
 
+            startServiceMonitoring()
+        }
+    }
+
+    private fun startServiceMonitoring() {
         createNotificationChannel()
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Explicitly mark this as a dataSync foreground service to satisfy Android 14+ policy
                 startForeground(
                     NOTIFICATION_ID,
                     createNotification(),
@@ -268,11 +279,9 @@ class CallDetectionService : Service() {
                 startForeground(NOTIFICATION_ID, createNotification())
             }
         } catch (se: SecurityException) {
-            // If type is rejected by policy, avoid crash and let WorkManager fallback keep things alive
             android.util.Log.e(TAG, "startForeground rejected by policy", se)
             stopForeground(true)
         }
-        // Register receivers for SMS status
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(smsSentReceiver, IntentFilter(ACTION_SMS_SENT), Context.RECEIVER_NOT_EXPORTED)
             registerReceiver(smsDeliveredReceiver, IntentFilter(ACTION_SMS_DELIVERED), Context.RECEIVER_NOT_EXPORTED)
@@ -281,16 +290,15 @@ class CallDetectionService : Service() {
             registerReceiver(smsDeliveredReceiver, IntentFilter(ACTION_SMS_DELIVERED))
         }
 
-        // Also schedule daily reset work to enforce once-per-day sending
         try { scheduleDailyResetWork() } catch (_: Exception) {}
 
-        // Register ContentObserver for call log to detect answered calls in near real-time
         try {
             callLogObserver = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
                 override fun onChange(selfChange: Boolean, uri: android.net.Uri?) {
                     super.onChange(selfChange, uri)
                     serviceScope.launch {
                         try {
+                            if (!autoMessagingManager.isAutoMessagingEnabled()) return@launch
                             val latest = getLatestAnsweredCallFromLog()
                             if (latest != null) {
                                 android.util.Log.d(TAG, "ContentObserver detected answered call id=${latest.id} number=${latest.number}")
@@ -338,13 +346,15 @@ class CallDetectionService : Service() {
             android.util.Log.e(TAG, "Failed to register PhoneStateListener", e)
         }
 
-        // Schedule keepalive to ensure restart if killed
-        scheduleKeepAlive()
+        autoMessagingManager.scheduleKeepAlive()
 
-        // Start 1-minute call log polling loop to ensure 100% background detection
         serviceScope.launch {
             while (true) {
                 try {
+                    if (!autoMessagingManager.isAutoMessagingEnabled()) {
+                        android.util.Log.d(TAG, "AUTO_MSG: poller exiting because automation disabled")
+                        break
+                    }
                     withWakeLock {
                         val latest = getLatestAnsweredCallFromLog()
                         if (latest != null) {
@@ -361,6 +371,8 @@ class CallDetectionService : Service() {
                 delay(60_000)
             }
         }
+
+        android.util.Log.d(TAG, "AUTO_MSG: service started")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -395,11 +407,10 @@ class CallDetectionService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        android.util.Log.d(TAG, "AUTO_MSG: service destroyed")
         serviceScope.cancel()
-        // Unregister receivers
         try { unregisterReceiver(smsSentReceiver) } catch (_: Exception) {}
         try { unregisterReceiver(smsDeliveredReceiver) } catch (_: Exception) {}
-        // Unregister ContentObserver
         try {
             callLogObserver?.let { contentResolver.unregisterContentObserver(it) }
             callLogObserver = null
@@ -420,12 +431,22 @@ class CallDetectionService : Service() {
                 }
             }
         } catch (_: Exception) {}
-        // Reschedule keepalive
-        scheduleKeepAlive()
+        val enabled = try { autoMessagingManager.isAutoMessagingEnabled() } catch (_: Exception) { true }
+        if (enabled) {
+            android.util.Log.d(TAG, "AUTO_MSG: recovery requested from onDestroy")
+            autoMessagingManager.scheduleKeepAlive()
+        } else {
+            android.util.Log.d(TAG, "AUTO_MSG: recovery skipped because automation disabled")
+        }
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
+        val enabled = try { autoMessagingManager.isAutoMessagingEnabled() } catch (_: Exception) { true }
+        if (!enabled) {
+            android.util.Log.d(TAG, "AUTO_MSG: onTaskRemoved skipped because automation disabled")
+            return
+        }
         try {
             val intent = Intent(this, CallDetectionService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -434,8 +455,7 @@ class CallDetectionService : Service() {
                 startService(intent)
             }
         } catch (_: Exception) { }
-        // Reschedule keepalive when task removed
-        scheduleKeepAlive()
+        autoMessagingManager.scheduleKeepAlive()
     }
 
     private fun createNotificationChannel() {
@@ -454,9 +474,19 @@ class CallDetectionService : Service() {
     }
 
     private fun createNotification(): Notification {
+        val autoReplyEnabled = try {
+            kotlinx.coroutines.runBlocking { dataStoreRepository.isAutoReplyEnabled().first() }
+        } catch (_: Exception) { false }
+
+        val statusText = if (autoReplyEnabled) {
+            "Monitoring calls for automatic replies"
+        } else {
+            "Service active - Auto-reply paused"
+        }
+
         val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Auto Message Service")
-            .setContentText("Monitoring calls for auto-reply")
+            .setContentTitle("Auto Messaging Active")
+            .setContentText(statusText)
             .setSmallIcon(R.drawable.ic_notification)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -506,25 +536,7 @@ class CallDetectionService : Service() {
     }
 
     private fun scheduleKeepAlive(intervalMs: Long = 20 * 60_000) {
-        try {
-            val am = getSystemService(AlarmManager::class.java)
-            val intent = Intent(this, KeepAliveReceiver::class.java).apply { action = ACTION_KEEPALIVE }
-            val pi = PendingIntent.getBroadcast(this, 0, intent, pendingFlags())
-            val triggerAt = System.currentTimeMillis() + intervalMs
-            val canExact = try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) am?.canScheduleExactAlarms() == true else true
-            } catch (_: Throwable) { false }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (canExact) {
-                    am?.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
-                } else {
-                    am?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
-                }
-            } else {
-                am?.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi)
-            }
-        } catch (_: Exception) { }
+        autoMessagingManager.scheduleKeepAlive(intervalMs)
     }
 
     private fun handleCallStateChanged(state: String?, phoneNumber: String?) {
@@ -547,8 +559,12 @@ class CallDetectionService : Service() {
                 }
             }
             TelephonyManager.EXTRA_STATE_IDLE -> {
-                // Call ended: send auto-reply only if it was a successful call (answered)
                 serviceScope.launch {
+                    val enabled = try { autoMessagingManager.isAutoMessagingEnabled() } catch (_: Exception) { true }
+                    if (!enabled) {
+                        android.util.Log.d(TAG, "AUTO_MSG: call ended but automation disabled, skipping")
+                        return@launch
+                    }
                     withWakeLock {
                         val number = phoneNumber ?: getLatestNumberFromLog()
                         if (!number.isNullOrBlank()) {
@@ -588,6 +604,7 @@ class CallDetectionService : Service() {
         try {
             val isEnabled = dataStoreRepository.isAutoReplyEnabled().first()
             if (!isEnabled) return
+            if (!autoMessagingManager.isAutoMessagingEnabled()) return
             if (hasSentRecently(phoneNumber)) return
             if (com.avinashpatil.app.automessage.utils.DailyMessageTracker.hasSentToday(this@CallDetectionService, phoneNumber)) {
                 android.util.Log.d(TAG, "Already sent today to $phoneNumber, skipping quick reply")
@@ -602,8 +619,9 @@ class CallDetectionService : Service() {
             }
 
             val message = getMessageForContact(contact)
-            // Small delay to let systems stabilize
             delay(1500L)
+            if (!autoMessagingManager.isAutoMessagingEnabled()) return
+            if (!dataStoreRepository.isAutoReplyEnabled().first()) return
             sendAutoReply(phoneNumber, message, contact, System.currentTimeMillis().toString(), callType)
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Error in scheduleQuickReply", e)
@@ -613,7 +631,8 @@ class CallDetectionService : Service() {
     private suspend fun checkAndSendAutoReply(phoneNumber: String) {
         try {
             val isEnabled = dataStoreRepository.isAutoReplyEnabled().first()
-            if (!isEnabled) { android.util.Log.d(TAG, "Auto-reply disabled, skipping for $phoneNumber"); return }
+            if (!isEnabled) { android.util.Log.d(TAG, "AUTO_MSG: disabled, skipping for $phoneNumber"); return }
+            if (!autoMessagingManager.isAutoMessagingEnabled()) { android.util.Log.d(TAG, "AUTO_MSG: master switch off, skipping for $phoneNumber"); return }
             if (hasSentRecently(phoneNumber)) { android.util.Log.d(TAG, "Recently sent to $phoneNumber, skipping"); return }
             if (com.avinashpatil.app.automessage.utils.DailyMessageTracker.hasSentToday(this@CallDetectionService, phoneNumber)) {
                 android.util.Log.d(TAG, "Already sent today to $phoneNumber, skipping")

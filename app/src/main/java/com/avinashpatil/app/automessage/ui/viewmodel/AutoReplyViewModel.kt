@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.avinashpatil.app.automessage.data.entity.AutoReplyLogEntity
 import com.avinashpatil.app.automessage.data.repository.AutoReplyRepository
 import com.avinashpatil.app.automessage.data.repository.DataStoreRepository
+import com.avinashpatil.app.automessage.service.AutoMessagingManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AutoReplyViewModel @Inject constructor(
     private val autoReplyRepository: AutoReplyRepository,
-    private val dataStoreRepository: DataStoreRepository
+    private val dataStoreRepository: DataStoreRepository,
+    private val autoMessagingManager: AutoMessagingManager
 ) : ViewModel() {
     
     private val _isAutoReplyEnabled = MutableStateFlow(false)
@@ -80,9 +82,12 @@ class AutoReplyViewModel @Inject constructor(
             try {
                 dataStoreRepository.saveAutoReplyEnabled(enabled)
                 _isAutoReplyEnabled.value = enabled
+                if (enabled) {
+                    autoMessagingManager.setAutoMessagingEnabled(true)
+                }
                 _successMessage.value = if (enabled) "Auto-reply enabled" else "Auto-reply disabled"
             } catch (e: Exception) {
-                _error.value = "Failed to update auto-reply setting: ${e.message}"
+                _error.value = "Failed to update auto-reply: ${e.message}"
             }
         }
     }
