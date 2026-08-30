@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon

@@ -3,7 +3,6 @@ package com.avinashpatil.app.automessage.di
 import android.app.Application
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.avinashpatil.app.automessage.data.database.AutoMessageDatabase
 import com.avinashpatil.app.automessage.data.repository.AutoReplyRepository
@@ -16,13 +15,12 @@ import com.avinashpatil.app.automessage.data.repository.GroupRepository
 import com.avinashpatil.app.automessage.data.repository.GroupRepositoryImpl
 import com.avinashpatil.app.automessage.data.repository.MessageRepository
 import com.avinashpatil.app.automessage.data.repository.MessageRepositoryImpl
+import com.avinashpatil.app.automessage.utils.dataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-
-private val Application.dataStore by preferencesDataStore(name = "auto_message_preferences")
 
 @Module
 @InstallIn(SingletonComponent::class)
