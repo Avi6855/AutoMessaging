@@ -6,15 +6,13 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.preferencesDataStoreFile
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import kotlinx.coroutines.flow.firstOrNull
 import com.avinashpatil.app.automessage.AutoMessageApplication
 import com.avinashpatil.app.automessage.R
 import com.avinashpatil.app.automessage.data.database.AutoMessageDatabase
+import com.avinashpatil.app.automessage.utils.dataStore
 
 class SmsStatusReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -48,12 +46,10 @@ class SmsStatusReceiver : BroadcastReceiver() {
 
     private fun notify(context: Context, title: String, text: String, notificationId: Int) {
         val soundEnabled = try {
-            val dataStore = PreferenceDataStoreFactory.create(produceFile = { context.preferencesDataStoreFile("auto_message_preferences") })
             val KEY = booleanPreferencesKey("notification_sound_enabled")
             var enabled = true
-            // read once synchronously is not supported; best effort by using runBlocking
             kotlinx.coroutines.runBlocking {
-                val prefs = dataStore.data.firstOrNull()
+                val prefs = context.dataStore.data.firstOrNull()
                 enabled = prefs?.get(KEY) ?: true
             }
             enabled
