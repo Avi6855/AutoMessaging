@@ -10,6 +10,8 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.avinashpatil.app.automessage.utils.AutoMessagingStateChecker
+import com.avinashpatil.app.automessage.utils.DailyHistoryClearScheduler
+import com.avinashpatil.app.automessage.workers.AutoReplyHistoryClearWorker
 import java.util.concurrent.TimeUnit
 
 class BootReceiver : BroadcastReceiver() {
@@ -42,6 +44,43 @@ class BootReceiver : BroadcastReceiver() {
                 scheduleCallLogPoller(context)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to schedule CallLogPollerWorker on boot", e)
+            }
+            // Reschedule daily history clear (exact alarm is lost on reboot)
+            try {
+                DailyHistoryClearScheduler.scheduleDailyClear(context)
+                AutoReplyHistoryClearWorker.scheduleDailyClear(context)
+                // Also reschedule DailyResetWorker fallback
+                val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Kolkata"))
+                val now = cal.timeInMillis
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                cal.set(java.util.Calendar.MINUTE, 1)
+                cal.set(java.util.Calendar.SECOND, 0)
+                cal.set(java.util.Calendar.MILLISECOND, 0)
+                var nextMidnight = cal.timeInMillis
+                if (nextMidnight <= now) {
+                    cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                    nextMidnight = cal.timeInMillis
+                }
+                val initialDelayMs = nextMidnight - now
+                val request = androidx.work.PeriodicWorkRequestBuilder<DailyResetWorker>(24, TimeUnit.HOURS)
+                    .setInitialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
+                    .addTag("DailyResetWork")
+                    .build()
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    "DailyResetWork",
+                    ExistingPeriodicWorkPolicy.UPDATE,
+                    request
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to reschedule daily clear on boot", e)
+            }
+        }
+        // Also handle TIME_SET / TIMEZONE_CHANGED to keep alarm accurate
+        if (action == Intent.ACTION_TIME_CHANGED || action == Intent.ACTION_TIMEZONE_CHANGED) {
+            try {
+                DailyHistoryClearScheduler.scheduleDailyClear(context)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to reschedule on time change", e)
             }
         }
     }

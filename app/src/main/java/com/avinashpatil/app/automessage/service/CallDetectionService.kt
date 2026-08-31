@@ -657,7 +657,9 @@ class CallDetectionService : Service() {
                 if (savedContact?.isBlacklisted == true) { android.util.Log.d(TAG, "Contact blacklisted, skipping for $phoneNumber"); return }
             }
 
-            val message = getMessageForContact(contact)
+            val baseMessage = getMessageForContact(contact)
+            // Personalize to avoid carrier spam filter (identical payload)
+            val message = com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.prepareMessage(baseMessage, contact)
             val callTypeStr = when (callLogEntry?.type) {
                 android.provider.CallLog.Calls.INCOMING_TYPE -> "INCOMING_ANSWERED"
                 android.provider.CallLog.Calls.OUTGOING_TYPE -> "OUTGOING_ANSWERED"
@@ -673,7 +675,23 @@ class CallDetectionService : Service() {
             )
             if (!canProcess) { android.util.Log.d(TAG, "Duplicate preventer blocked for $phoneNumber"); return }
 
-            // Send immediately (remove delay)
+            // Global anti-spam throttle (30/hr, 100/day IST)
+            if (!com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.canSendNow(this@CallDetectionService)) {
+                android.util.Log.w(TAG, "Anti-spam throttle active, skipping send to $phoneNumber (hour/day limit)")
+                return
+            }
+
+            // Respect user-configured auto-reply delay
+            try {
+                val delaySec = dataStoreRepository.getAutoReplyDelay().first()
+                if (delaySec > 0) {
+                    android.util.Log.d(TAG, "Delaying auto-reply by ${delaySec}s for $phoneNumber")
+                    delay(delaySec * 1000L)
+                    if (!autoMessagingManager.isAutoMessagingEnabled()) return
+                    if (!dataStoreRepository.isAutoReplyEnabled().first()) return
+                }
+            } catch (_: Exception) {}
+
             sendAutoReply(phoneNumber, message, contact, callIdStr, callTypeStr)
             com.avinashpatil.app.automessage.utils.DuplicatePreventer.markProcessed(this@CallDetectionService, callIdStr, phoneNumber)
 
@@ -716,9 +734,16 @@ class CallDetectionService : Service() {
                 if (member.isBlacklisted) continue
                 if (hasSentRecently(phone)) continue
                 if (com.avinashpatil.app.automessage.utils.DailyMessageTracker.hasSentToday(this@CallDetectionService, phone)) continue
+                if (!com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.canSendNow(this@CallDetectionService)) {
+                    android.util.Log.w(TAG, "Anti-spam throttle hit during group send, stopping at ${member.phoneNumber}")
+                    break
+                }
 
                 try {
-                    sendAutoReply(phone, message, member, callId, "GROUP_" + callType)
+                    val personalized = com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.prepareMessage(message, member)
+                    sendAutoReply(phone, personalized, member, callId, "GROUP_" + callType)
+                    // Jitter delay to avoid carrier burst detection (3-7s random)
+                    delay(com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.jitterDelayMs())
                 } catch (e: Exception) {
                     android.util.Log.e(TAG, "Failed group send to ${member.phoneNumber}", e)
                 }
@@ -796,7 +821,7 @@ class CallDetectionService : Service() {
             }
         
             val ts = System.currentTimeMillis()
-            val dayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(ts))
+            val dayKey = com.avinashpatil.app.automessage.utils.DailyHistoryClearScheduler.getTodayDayKey()
         
             // Pre-log with PENDING status and unique phone+dayKey
             val preLog = AutoReplyLogEntity(
@@ -905,6 +930,8 @@ class CallDetectionService : Service() {
             // Mark last seen call after initiating send
             autoReplyRepository.updateLastSeenCall(callId, contact?.id)
             recentlySent[phoneNumber] = System.currentTimeMillis()
+            // Record for global anti-spam rate limiting (IST)
+            com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.recordSent(this)
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Failed to send auto-reply to $phoneNumber", e)
             // If we created a log row, mark as FAILED

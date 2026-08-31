@@ -478,8 +478,8 @@ fun RecentScreen(
             }
 
             val ts = System.currentTimeMillis()
-            val dayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(ts))
-            // Prevent duplicates by unique phone+dayKey
+            val dayKey = com.avinashpatil.app.automessage.utils.DailyHistoryClearScheduler.getTodayDayKey()
+            // Prevent duplicates by unique phone+dayKey (IST)
             var logId = -1L
             var attempts = 1
             val preLog = com.avinashpatil.app.automessage.data.entity.AutoReplyLogEntity(

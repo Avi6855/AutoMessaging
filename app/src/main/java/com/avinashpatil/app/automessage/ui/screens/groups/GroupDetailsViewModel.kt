@@ -185,19 +185,20 @@ class GroupDetailsViewModel @Inject constructor(
             var successCount = 0
             for (contact in contacts) {
                 val phone = contact.phoneNumber?.trim().orEmpty()
-                if (phone.isEmpty()) {
-                    // Skip invalid numbers
-                    continue
+                if (phone.isEmpty()) continue
+                if (!com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.canSendNow(application)) {
+                    android.util.Log.w(TAG, "Anti-spam throttle hit, stopping bulk at $phone")
+                    break
                 }
+                val personalized = com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.prepareMessage(messageContent, contact)
                 try {
-                    sendSmsMessage(phone, messageContent, batchId)
+                    sendSmsMessage(phone, personalized, batchId)
+                    com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.recordSent(application)
                     successCount++
+                    // Jitter delay 3-7s to avoid carrier burst spam flag
+                    kotlinx.coroutines.delay(com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.jitterDelayMs())
                 } catch (e: Exception) {
-                    // Log error but continue with other contacts
-                    android.util.Log.e(
-                        TAG,
-                        "Failed to send message to ${contact.phoneNumber}: ${e.message}"
-                    )
+                    android.util.Log.e(TAG, "Failed to send message to ${contact.phoneNumber}: ${e.message}")
                 }
             }
             successCount
