@@ -108,7 +108,7 @@ class AutoReplyViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val ts = System.currentTimeMillis()
-                val dayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(ts))
+                val dayKey = com.avinashpatil.app.automessage.utils.DailyHistoryClearScheduler.getTodayDayKey()
                 val log = AutoReplyLogEntity(
                     contactId = contactId,
                     contactName = contactName,

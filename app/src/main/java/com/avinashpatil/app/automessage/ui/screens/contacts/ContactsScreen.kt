@@ -970,13 +970,18 @@ fun GroupsList(
                                                              groupContacts.forEach { contact ->
                                                                  val phone = contact.phoneNumber?.trim().orEmpty()
                                                                  if (phone.isNotEmpty()) {
+                                                                 if (!com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.canSendNow(localContext)) {
+                                                                     android.util.Log.w("GroupsList", "Anti-spam throttle hit, stopping bulk at $phone")
+                                                                     return@forEach
+                                                                 }
+                                                                 val personalized = com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.prepareMessage(msgBody, contact)
                                                                  try {
                                                                          val smsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                                                                              localContext.getSystemService(android.telephony.SmsManager::class.java) ?: android.telephony.SmsManager.getDefault()
                                                                          } else {
                                                                              android.telephony.SmsManager.getDefault()
                                                                          }
-                                                                         val parts = smsManager.divideMessage(msgBody)
+                                                                         val parts = smsManager.divideMessage(personalized)
                                                                          if (parts.size > 1) {
                                                                              val sentIntents = java.util.ArrayList<android.app.PendingIntent>()
                                                                              parts.forEach { _ ->
@@ -997,9 +1002,11 @@ fun GroupsList(
                                                                                  android.content.Intent("SMS_SENT"),
                                                                                  android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                                                                              )
-                                                                             smsManager.sendTextMessage(phone, null, msgBody, sentIntent, null)
+                                                                             smsManager.sendTextMessage(phone, null, personalized, sentIntent, null)
                                                                          }
+                                                                         com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.recordSent(localContext)
                                                                          success++
+                                                                         kotlinx.coroutines.delay(com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.jitterDelayMs())
                                                                      } catch (e: Exception) {
                                                                          android.util.Log.e("GroupsList", "Failed to send to $phone: ${e.message}")
                                                                      }

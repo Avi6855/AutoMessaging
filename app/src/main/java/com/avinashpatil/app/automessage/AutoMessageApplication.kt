@@ -12,6 +12,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.avinashpatil.app.automessage.service.CallLogPollerWorker
 import com.avinashpatil.app.automessage.utils.AutoMessagingStateChecker
+import com.avinashpatil.app.automessage.utils.DailyHistoryClearScheduler
 import com.avinashpatil.app.automessage.workers.AutoReplyHistoryClearWorker
 import dagger.hilt.android.HiltAndroidApp
 import java.util.concurrent.TimeUnit
@@ -56,6 +57,9 @@ class AutoMessageApplication : Application() {
     }
 
     private fun scheduleAutoReplyHistoryClear() {
+        // Primary: exact alarm at 00:01 IST (forceful, fallback WorkManager kept for safety)
+        DailyHistoryClearScheduler.scheduleDailyClear(this)
+        // Keep WorkManager as inexact fallback (runs ~00:02 IST if exact alarm denied)
         AutoReplyHistoryClearWorker.scheduleDailyClear(this)
     }
 
