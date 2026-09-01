@@ -1283,299 +1283,300 @@ fun RecentScreen(
                                                         }
                                                     }
                                                 }
-                                             }
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
 
-                                        1 -> {
-                                        // Auto Message Sent List tab with optional search
-                                        val query = debouncedQuery
-                                        val base =
-                                            autoReplyHistory.filter { it.isAutoReply && it.status == "DELIVERED" }
-                                        val filtered =
-                                            if (query.isBlank()) base else base.filter { log ->
-                                                (log.contactName ?: "").contains(
-                                                    query,
-                                                    ignoreCase = true
-                                                ) ||
-                                                        log.phoneNumber.contains(
-                                                            query,
-                                                            ignoreCase = true
-                                                        ) ||
-                                                        (log.messageText ?: "").contains(
-                                                            query,
-                                                            ignoreCase = true
-                                                        )
-                                            }
-                                        var lastPopupTs by remember { mutableStateOf(0L) }
-                                        var lastPopupId by remember { mutableStateOf(-1L) }
-                                        LaunchedEffect(base) {
-                                            try {
-                                                val now = System.currentTimeMillis()
-                                                val candidate = base.maxByOrNull {
-                                                    kotlin.math.max(
-                                                        it.deliveredTimestamp ?: 0L,
-                                                        it.sentTimestamp ?: 0L
-                                                    )
-                                                }
-                                                val ts = candidate?.let {
-                                                    kotlin.math.max(
-                                                        it.deliveredTimestamp ?: 0L,
-                                                        it.sentTimestamp ?: 0L
-                                                    )
-                                                } ?: 0L
-                                                if (candidate != null && ts > lastPopupTs && (now - ts) <= 1500) {
-                                                    popupType = if ((candidate.deliveredTimestamp
-                                                            ?: 0L) >= (candidate.sentTimestamp
-                                                            ?: 0L)
-                                                    ) "DELIVERED" else "SENT"
-                                                    popupLog = candidate
-                                                    lastPopupTs = ts
-                                                    lastPopupId = candidate.id
-                                                }
-                                            } catch (_: Exception) {
-                                            }
-                                        }
-                                        Box(modifier = Modifier.fillMaxSize()) {
-                                            if (isLoading) {
-                                                Box(
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    NeumorphicCard(
-                                                        modifier = Modifier.size(80.dp),
-                                                        cornerRadius = 40.dp,
-                                                        elevation = 6.dp,
-                                                        backgroundColor = NeoSurface
-                                                    ) {
-                                                        Box(
-                                                            modifier = Modifier.fillMaxSize(),
-                                                            contentAlignment = Alignment.Center
-                                                        ) {
-                                                            CircularProgressIndicator(
-                                                                color = NeoAccent,
-                                                                strokeWidth = 3.dp
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            } else if (filtered.isEmpty()) {
-                                                EmptyState()
-                                            } else {
-                                                Column {
-                                                    // Show last auto-clear status
-                                                    if (lastClearTime > 0) {
-                                                        val lastClearDate =
-                                                            java.util.Date(lastClearTime)
-                                                        val timeAgo = formatTimeAgo(lastClearTime)
-                                                        NeumorphicCard(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .padding(horizontal = 16.dp)
-                                                                .padding(bottom = 8.dp),
-                                                            cornerRadius = 12.dp,
-                                                            elevation = 2.dp
-                                                        ) {
-                                                            Row(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .padding(12.dp),
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Schedule,
-                                                                    contentDescription = null,
-                                                                    tint = NeoSecondaryText,
-                                                                    modifier = Modifier.size(16.dp)
-                                                                )
-                                                                Spacer(modifier = Modifier.width(8.dp))
-                                                                Text(
-                                                                    text = "History auto-cleared $timeAgo",
-                                                                    style = MaterialTheme.typography.bodySmall,
-                                                                    color = NeoSecondaryText
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-
-                                                    AutoReplyHistoryList(
-                                                        history = filtered,
-                                                        onDeleteItem = { log: AutoReplyLogEntity ->
-                                                            confirmDeleteLog = log
-                                                        },
-                                                        onClickItem = { log: AutoReplyLogEntity ->
-                                                            navController.navigate("message_detail/${log.id}")
-                                                        }
-                                                    )
-                                                }
-                                            }
-
-                                            // Delete confirmation overlay
-                                            confirmDeleteLog?.let { log ->
-                                                NeumorphicCard(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(16.dp)
-                                                ) {
-                                                    Column(modifier = Modifier.padding(20.dp)) {
-                                                        Text(
-                                                            text = "Delete this entry?",
-                                                            style = MaterialTheme.typography.titleMedium,
-                                                            color = NeoPrimaryText
-                                                        )
-                                                        Spacer(modifier = Modifier.height(8.dp))
-                                                        Text(
-                                                            text = "This will remove the selected auto-reply log.",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = NeoSecondaryText
-                                                        )
-                                                        Spacer(modifier = Modifier.height(16.dp))
-                                                        Row {
-                                                            NeumorphicButton(
-                                                                text = "Cancel",
-                                                                onClick = {
-                                                                    confirmDeleteLog = null
-                                                                },
-                                                                modifier = Modifier.weight(1f)
-                                                            )
-                                                            Spacer(modifier = Modifier.width(12.dp))
-                                                            NeumorphicButton(
-                                                                text = "Delete",
-                                                                onClick = {
-                                                                    viewModel.deleteAutoReplyLog(log)
-                                                                    confirmDeleteLog = null
-                                                                },
-                                                                modifier = Modifier.weight(1f)
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            // One-time toast for midnight auto-clear
-                                            if (showAutoClearToast) {
-                                                androidx.compose.runtime.LaunchedEffect(Unit) {
-                                                    kotlinx.coroutines.delay(2500)
-                                                    showAutoClearToast = false
-                                                    AutoReplyHistoryClearWorker.markToastNotified(
-                                                        context
-                                                    )
-                                                }
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxSize()
-                                                        .padding(16.dp),
-                                                    contentAlignment = Alignment.BottomCenter
-                                                ) {
-                                                    NeumorphicCard(
-                                                        cornerRadius = 20.dp,
-                                                        elevation = 10.dp,
-                                                        backgroundColor = NeoSurface
-                                                    ) {
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .padding(
-                                                                    horizontal = 22.dp,
-                                                                    vertical = 18.dp
-                                                                ),
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            horizontalArrangement = Arrangement.spacedBy(
-                                                                14.dp
-                                                            )
-                                                        ) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Info,
-                                                                contentDescription = null,
-                                                                tint = NeoAccent,
-                                                                modifier = Modifier.size(24.dp)
-                                                            )
-                                                            Text(
-                                                                text = "Auto-reply history cleared at midnight.",
-                                                                style = MaterialTheme.typography.bodyMedium,
-                                                                color = NeoPrimaryText,
-                                                                fontWeight = FontWeight.Medium
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            // In-app popup for sent/delivered
-                                            popupLog?.let { log ->
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxSize()
-                                                        .padding(16.dp),
-                                                    contentAlignment = Alignment.BottomCenter
-                                                ) {
-                                                    NeumorphicCard(
-                                                        cornerRadius = 16.dp,
-                                                        elevation = 12.dp,
-                                                        backgroundColor = NeoSurface
-                                                    ) {
-                                                        Column(modifier = Modifier.padding(16.dp)) {
-                                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Notifications,
-                                                                    contentDescription = null,
-                                                                    tint = NeoAccent,
-                                                                    modifier = Modifier.size(20.dp)
-                                                                )
-                                                                Spacer(modifier = Modifier.width(8.dp))
-                                                                Text(
-                                                                    text = if (popupType == "DELIVERED") "Delivered" else "Sent",
-                                                                    style = MaterialTheme.typography.titleSmall,
-                                                                    color = NeoPrimaryText,
-                                                                    fontWeight = FontWeight.SemiBold
-                                                                )
-                                                            }
-                                                            Spacer(modifier = Modifier.height(6.dp))
-                                                            Text(
-                                                                text = "To: ${log.contactName.ifEmpty { log.phoneNumber }}",
-                                                                style = MaterialTheme.typography.bodySmall,
-                                                                color = NeoSecondaryText
-                                                            )
-                                                            Text(
-                                                                text = "At: ${formatTime(log.timestamp)}",
-                                                                style = MaterialTheme.typography.bodySmall,
-                                                                color = NeoSecondaryText
-                                                            )
-                                                            Spacer(modifier = Modifier.height(6.dp))
-                                                            Text(
-                                                                text = (log.messageText
-                                                                    ?: "").split(
-                                                                    '\n'
-                                                                ).firstOrNull().orEmpty(),
-                                                                style = MaterialTheme.typography.bodyMedium,
-                                                                color = NeoPrimaryText,
-                                                                maxLines = 2,
-                                                                overflow = TextOverflow.Ellipsis
-                                                            )
-                                                            Spacer(modifier = Modifier.height(10.dp))
-                                                            Row(
-                                                                horizontalArrangement = Arrangement.End,
-                                                                modifier = Modifier.fillMaxWidth()
-                                                            ) {
-                                                                NeumorphicButton(
-                                                                    text = "Close",
-                                                                    onClick = { popupLog = null },
-                                                                    cornerRadius = 10.dp
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                        1 -> {
+                            // Auto Message Sent List tab with optional search
+                            val query = debouncedQuery
+                            val base =
+                                autoReplyHistory.filter { it.isAutoReply && it.status == "DELIVERED" }
+                            val filtered =
+                                if (query.isBlank()) base else base.filter { log ->
+                                    (log.contactName ?: "").contains(
+                                        query,
+                                        ignoreCase = true
+                                    ) ||
+                                            log.phoneNumber.contains(
+                                                query,
+                                                ignoreCase = true
+                                            ) ||
+                                            (log.messageText ?: "").contains(
+                                                query,
+                                                ignoreCase = true
+                                            )
+                                }
+                            var lastPopupTs by remember { mutableStateOf(0L) }
+                            var lastPopupId by remember { mutableStateOf(-1L) }
+                            LaunchedEffect(base) {
+                                try {
+                                    val now = System.currentTimeMillis()
+                                    val candidate = base.maxByOrNull {
+                                        kotlin.math.max(
+                                            it.deliveredTimestamp ?: 0L,
+                                            it.sentTimestamp ?: 0L
+                                        )
+                                    }
+                                    val ts = candidate?.let {
+                                        kotlin.math.max(
+                                            it.deliveredTimestamp ?: 0L,
+                                            it.sentTimestamp ?: 0L
+                                        )
+                                    } ?: 0L
+                                    if (candidate != null && ts > lastPopupTs && (now - ts) <= 1500) {
+                                        popupType = if ((candidate.deliveredTimestamp
+                                                ?: 0L) >= (candidate.sentTimestamp
+                                                ?: 0L)
+                                        ) "DELIVERED" else "SENT"
+                                        popupLog = candidate
+                                        lastPopupTs = ts
+                                        lastPopupId = candidate.id
+                                    }
+                                } catch (_: Exception) {
+                                }
+                            }
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                if (isLoading) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        NeumorphicCard(
+                                            modifier = Modifier.size(80.dp),
+                                            cornerRadius = 40.dp,
+                                            elevation = 6.dp,
+                                            backgroundColor = NeoSurface
+                                        ) {
+                                            Box(
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    color = NeoAccent,
+                                                    strokeWidth = 3.dp
+                                                )
                                             }
                                         }
                                     }
+                                } else if (filtered.isEmpty()) {
+                                    EmptyState()
+                                } else {
+                                    Column {
+                                        // Show last auto-clear status
+                                        if (lastClearTime > 0) {
+                                            val lastClearDate =
+                                                java.util.Date(lastClearTime)
+                                            val timeAgo = formatTimeAgo(lastClearTime)
+                                            NeumorphicCard(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 16.dp)
+                                                    .padding(bottom = 8.dp),
+                                                cornerRadius = 12.dp,
+                                                elevation = 2.dp
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(12.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Schedule,
+                                                        contentDescription = null,
+                                                        tint = NeoSecondaryText,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = "History auto-cleared $timeAgo",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = NeoSecondaryText
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        AutoReplyHistoryList(
+                                            history = filtered,
+                                            onDeleteItem = { log: AutoReplyLogEntity ->
+                                                confirmDeleteLog = log
+                                            },
+                                            onClickItem = { log: AutoReplyLogEntity ->
+                                                navController.navigate("message_detail/${log.id}")
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // Delete confirmation overlay
+                                confirmDeleteLog?.let { log ->
+                                    NeumorphicCard(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(20.dp)) {
+                                            Text(
+                                                text = "Delete this entry?",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = NeoPrimaryText
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = "This will remove the selected auto-reply log.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = NeoSecondaryText
+                                            )
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            Row {
+                                                NeumorphicButton(
+                                                    text = "Cancel",
+                                                    onClick = {
+                                                        confirmDeleteLog = null
+                                                    },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                NeumorphicButton(
+                                                    text = "Delete",
+                                                    onClick = {
+                                                        viewModel.deleteAutoReplyLog(log)
+                                                        confirmDeleteLog = null
+                                                    },
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // One-time toast for midnight auto-clear
+                                if (showAutoClearToast) {
+                                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                                        kotlinx.coroutines.delay(2500)
+                                        showAutoClearToast = false
+                                        AutoReplyHistoryClearWorker.markToastNotified(
+                                            context
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.BottomCenter
+                                    ) {
+                                        NeumorphicCard(
+                                            cornerRadius = 20.dp,
+                                            elevation = 10.dp,
+                                            backgroundColor = NeoSurface
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .padding(
+                                                        horizontal = 22.dp,
+                                                        vertical = 18.dp
+                                                    ),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(
+                                                    14.dp
+                                                )
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Info,
+                                                    contentDescription = null,
+                                                    tint = NeoAccent,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                                Text(
+                                                    text = "Auto-reply history cleared at midnight.",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = NeoPrimaryText,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // In-app popup for sent/delivered
+                                popupLog?.let { log ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.BottomCenter
+                                    ) {
+                                        NeumorphicCard(
+                                            cornerRadius = 16.dp,
+                                            elevation = 12.dp,
+                                            backgroundColor = NeoSurface
+                                        ) {
+                                            Column(modifier = Modifier.padding(16.dp)) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Notifications,
+                                                        contentDescription = null,
+                                                        tint = NeoAccent,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = if (popupType == "DELIVERED") "Delivered" else "Sent",
+                                                        style = MaterialTheme.typography.titleSmall,
+                                                        color = NeoPrimaryText,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Text(
+                                                    text = "To: ${log.contactName.ifEmpty { log.phoneNumber }}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = NeoSecondaryText
+                                                )
+                                                Text(
+                                                    text = "At: ${formatTime(log.timestamp)}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = NeoSecondaryText
+                                                )
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Text(
+                                                    text = (log.messageText
+                                                        ?: "").split(
+                                                        '\n'
+                                                    ).firstOrNull().orEmpty(),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = NeoPrimaryText,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Row(
+                                                    horizontalArrangement = Arrangement.End,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    NeumorphicButton(
+                                                        text = "Close",
+                                                        onClick = { popupLog = null },
+                                                        cornerRadius = 10.dp
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
 
 // Top-level model for device call logs
 data class DeviceCallLog(
@@ -1593,7 +1594,7 @@ private fun CallLogsList(logs: List<DeviceCallLog>, highlightedIds: Set<Long>) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-                itemsIndexed(logs) { index: Int, log: DeviceCallLog ->
+        itemsIndexed(logs) { index: Int, log: DeviceCallLog ->
             val isAnswered = (
                     (log.type == android.provider.CallLog.Calls.INCOMING_TYPE && log.durationSec > 0) ||
                             (log.type == android.provider.CallLog.Calls.OUTGOING_TYPE && log.durationSec > 0)
