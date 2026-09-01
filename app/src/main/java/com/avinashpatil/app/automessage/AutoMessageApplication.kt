@@ -34,6 +34,7 @@ class AutoMessageApplication : Application() {
         Log.d("AutoMessageApplication", "AUTO_MSG: app started, autoMessaging=$enabled")
 
         if (enabled) {
+            startCallDetectionService()
             scheduleCallLogPoller()
         } else {
             Log.d("AutoMessageApplication", "AUTO_MSG: poller not scheduled because automation disabled")
@@ -61,6 +62,20 @@ class AutoMessageApplication : Application() {
         DailyHistoryClearScheduler.scheduleDailyClear(this)
         // Keep WorkManager as inexact fallback (runs ~00:02 IST if exact alarm denied)
         AutoReplyHistoryClearWorker.scheduleDailyClear(this)
+    }
+
+    private fun startCallDetectionService() {
+        try {
+            val serviceIntent = android.content.Intent(this, com.avinashpatil.app.automessage.service.CallDetectionService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+            Log.d("AutoMessageApplication", "AUTO_MSG: CallDetectionService started")
+        } catch (e: Exception) {
+            Log.e("AutoMessageApplication", "AUTO_MSG: Failed to start CallDetectionService", e)
+        }
     }
 
     private fun scheduleCallLogPoller() {

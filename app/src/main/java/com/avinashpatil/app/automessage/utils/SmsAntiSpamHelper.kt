@@ -61,8 +61,7 @@ object SmsAntiSpamHelper {
     /**
      * Personalize message to avoid identical payload spam detection.
      * - Replaces {name} with contact name if present
-     * - Appends lightweight random suffix to break hash equality (visible but minimal)
-     * - Appends STOP footer for compliance
+     * - Sends message EXACTLY as configured by user (no modifications, no footer)
      */
     fun personalize(base: String, contact: ContactEntity?): String {
         var msg = base.trim()
@@ -76,31 +75,7 @@ object SmsAntiSpamHelper {
             msg = msg.replace("{name}", "", ignoreCase = true).replace("  ", " ").trim()
         }
 
-        // If message already contains STOP footer, don't duplicate
-        val hasFooter = msg.contains("STOP", ignoreCase = true)
-
-        // Lightweight variation suffix (breaks identical hash without being spammy)
-        // Use short random ref — visible but professional
-        val suffixes = listOf("", " — Thanks!", " — Team", "")
-        val suffix = suffixes.random()
-
-        if (suffix.isNotEmpty() && !msg.endsWith(suffix)) {
-            msg = "$msg$suffix"
-        }
-
-        // Append compliance footer if missing (helps carriers treat as solicited)
-        if (!hasFooter) {
-            msg = "$msg\nReply STOP to opt out"
-        }
-
-        // Add tiny random ref to guarantee uniqueness when sending same base to many numbers in bulk
-        // Use last 4 of nanoTime hex — minimal, 5 chars like " [a3f9]"
-        val ref = Integer.toHexString((System.nanoTime() and 0xFFFF).toInt()).padStart(4, '0')
-        // Only add ref for bulk-like context where same base repeats; keep it subtle
-        // We add as zero-width? Better visible tiny tag — carriers ignore but breaks exact dup filter
-        // Keep it commented to avoid user-visible noise; enable only if spam persists:
-        // msg = "$msg [$ref]"
-
+        // Send message EXACTLY as configured by user — no modifications, no suffix, no footer
         return msg.trim()
     }
 

@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
 import android.os.Build
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.util.Log
 import com.avinashpatil.app.automessage.utils.AutoMessagingStateChecker
 
@@ -54,49 +52,52 @@ class PhoneStateReceiver : BroadcastReceiver() {
     }
 
     private fun startServiceSafely(context: Context, serviceIntent: Intent) {
+        // Try to start the service directly first
         try {
-            val am = context.getSystemService(AlarmManager::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+            Log.d(TAG, "Service started directly with intent action=${serviceIntent.action}")
+            return
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start service directly: ${e.message}")
+        }
+
+        // Fallback: try starting the service without extras (just to get it alive)
+        try {
+            val plainIntent = Intent(context, CallDetectionService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(plainIntent)
+            } else {
+                context.startService(plainIntent)
+            }
+            Log.d(TAG, "Service started (plain fallback)")
+            return
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start service (plain fallback): ${e.message}")
+        }
+
+        // Last resort: schedule an alarm to restart the service in 3 seconds
+        try {
+            val am = context.getSystemService(android.app.AlarmManager::class.java)
             val pi = PendingIntent.getBroadcast(
                 context,
                 1001,
                 Intent("com.avinashpatil.app.automessage.ACTION_KEEPALIVE").setPackage(context.packageName),
                 PendingIntent.FLAG_UPDATE_CURRENT or pendingFlags()
             )
-
             val triggerAt = System.currentTimeMillis() + 3_000
-
-            val canExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                try { am.canScheduleExactAlarms() } catch (_: Throwable) { false }
-            } else true
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (canExact) {
-                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
-                    Log.d(TAG, "Exact keepalive scheduled (~3s)")
-                } else {
-                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
-                    Log.d(TAG, "Inexact keepalive scheduled (~3s)")
-                }
+                am?.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
             } else {
-                am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi)
-                Log.d(TAG, "Exact keepalive scheduled (pre-M)")
+                @Suppress("DEPRECATION")
+                am?.set(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
             }
-        } catch (e: SecurityException) {
-            try {
-                val am = context.getSystemService(AlarmManager::class.java)
-                val pi = PendingIntent.getBroadcast(
-                    context,
-                    1001,
-                    Intent("com.avinashpatil.app.automessage.ACTION_KEEPALIVE").setPackage(context.packageName),
-                    PendingIntent.FLAG_UPDATE_CURRENT or pendingFlags()
-                )
-                am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5_000, pi)
-                Log.w(TAG, "SecurityException, used non-exact alarm fallback (~5s)")
-            } catch (t: Throwable) {
-                Log.e(TAG, "Failed to schedule keepalive (fallback)", t)
-            }
-        } catch (t: Throwable) {
-            Log.e(TAG, "Failed to schedule keepalive", t)
+            Log.w(TAG, "Scheduled keepalive alarm fallback (~3s)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule keepalive alarm", e)
         }
     }
 
