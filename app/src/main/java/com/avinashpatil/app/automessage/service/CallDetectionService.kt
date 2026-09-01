@@ -140,7 +140,6 @@ class CallDetectionService : Service() {
                         autoReplyRepository.markLogSent(id = logId, attempts = attempts, sentTs = System.currentTimeMillis())
                         try { com.avinashpatil.app.automessage.utils.DuplicatePreventer.markSent(this@CallDetectionService, phone) } catch (_: Exception) {}
                         try { com.avinashpatil.app.automessage.utils.DailyMessageTracker.markSentToday(this@CallDetectionService, phone) } catch (_: Exception) {}
-                        try { autoReplyRepository.markAllAsDelivered(System.currentTimeMillis()) } catch (_: Exception) {}
                         // Immediate popup toast
                         com.avinashpatil.app.automessage.utils.UiFeedback.showNeumorphicToast(
                             this@CallDetectionService,
@@ -691,15 +690,16 @@ class CallDetectionService : Service() {
                 )
                 if (!retryCanProcess) return
                 if (!com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.canSendNow(this@CallDetectionService)) return
-                val baseMessage = getMessageForContact(contact)
-                val message = com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.prepareMessage(baseMessage, contact)
+                val retryContact = com.avinashpatil.app.automessage.utils.ContactHelper.getContactByPhoneNumber(this@CallDetectionService, phoneNumber)
+                val baseMessage = getMessageForContact(retryContact)
+                val message = com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.prepareMessage(baseMessage, retryContact)
                 try {
                     val delaySec = dataStoreRepository.getAutoReplyDelay().first()
                     if (delaySec > 0) { delay(delaySec * 1000L) }
                 } catch (_: Exception) {}
                 if (!autoMessagingManager.isAutoMessagingEnabled()) return
                 if (!dataStoreRepository.isAutoReplyEnabled().first()) return
-                sendAutoReply(phoneNumber, message, contact, retryCallIdStr, retryCallTypeStr)
+                sendAutoReply(phoneNumber, message, retryContact, retryCallIdStr, retryCallTypeStr)
                 com.avinashpatil.app.automessage.utils.DuplicatePreventer.markProcessed(this@CallDetectionService, retryCallIdStr, phoneNumber)
                 return
             }
@@ -948,6 +948,7 @@ class CallDetectionService : Service() {
         
             if (parts.size > 1) {
                 android.util.Log.d(TAG, "Sending multipart SMS with ${parts.size} parts")
+                val requestCode = (logId % Int.MAX_VALUE).toInt()
                 for (i in parts.indices) {
                     val sentIntent = Intent(ACTION_SMS_SENT).apply {
                         putExtra("log_id", logId)
@@ -958,8 +959,8 @@ class CallDetectionService : Service() {
                         putExtra("log_id", logId)
                         putExtra("phone", phoneNumber)
                     }
-                    sentIntents.add(PendingIntent.getBroadcast(this, i, sentIntent, pendingFlags()))
-                    deliverIntents.add(PendingIntent.getBroadcast(this, i, deliveredIntent, pendingFlags()))
+                    sentIntents.add(PendingIntent.getBroadcast(this, requestCode + i, sentIntent, pendingFlags()))
+                    deliverIntents.add(PendingIntent.getBroadcast(this, requestCode + i + 10_000, deliveredIntent, pendingFlags()))
                 }
                 // Ensure CPU stays awake during send
                 withWakeLock {
@@ -976,8 +977,9 @@ class CallDetectionService : Service() {
                     putExtra("log_id", logId)
                     putExtra("phone", phoneNumber)
                 }
-                val piSent = PendingIntent.getBroadcast(this, 0, sentIntent, pendingFlags())
-                val piDelivered = PendingIntent.getBroadcast(this, 0, deliveredIntent, pendingFlags())
+                val requestCode = (logId % Int.MAX_VALUE).toInt()
+                val piSent = PendingIntent.getBroadcast(this, requestCode, sentIntent, pendingFlags())
+                val piDelivered = PendingIntent.getBroadcast(this, requestCode + 10_000, deliveredIntent, pendingFlags())
                 // Ensure CPU stays awake during send
                 withWakeLock {
                     smsManager.sendTextMessage(phoneNumber, null, message, piSent, piDelivered)
