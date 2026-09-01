@@ -1,0 +1,604 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.avinashpatil.app.automessage"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <!-- Declare telephony hardware feature optional for ChromeOS compliance -->
+12    <uses-feature
+12-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:6:5-88
+13        android:name="android.hardware.telephony"
+13-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:6:19-60
+14        android:required="false" />
+14-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:6:61-85
+15
+16    <!-- Contact and Call Log Permissions -->
+17    <uses-permission android:name="android.permission.READ_CONTACTS" />
+17-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:9:5-72
+17-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:9:22-69
+18    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+18-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:10:5-72
+18-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:10:22-69
+19    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+19-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:11:5-75
+19-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:11:22-72
+20
+21    <!-- SMS Permissions -->
+22    <uses-permission android:name="android.permission.SEND_SMS" />
+22-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:14:5-67
+22-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:14:22-64
+23    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+23-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:15:5-70
+23-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:15:22-67
+24    <!-- Read SMS permission for delivery/status on OEMs (API 29–35) -->
+25    <uses-permission android:name="android.permission.READ_SMS" />
+25-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:17:5-67
+25-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:17:22-64
+26
+27    <!-- Foreground service permission (Android 9+) -->
+28    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+28-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:20:5-77
+28-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:20:22-74
+29    <!-- Foreground service type permissions for Android 14+ -->
+30    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+30-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:22:5-88
+30-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:22:22-85
+31    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+31-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:23:5-87
+31-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:23:22-84
+32
+33    <!-- Boot completed permission to start services automatically -->
+34    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+34-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:26:5-81
+34-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:26:22-78
+35
+36    <!-- Notifications permission for Android 13+ -->
+37    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+37-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:29:5-77
+37-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:29:22-74
+38    <!-- Wake lock to keep CPU awake during processing -->
+39    <uses-permission android:name="android.permission.WAKE_LOCK" />
+39-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:31:5-68
+39-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:31:22-65
+40    <!-- Exact alarm permission for keepalive scheduling on Android 12+ -->
+41    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+41-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:33:5-79
+41-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:33:22-76
+42    <!-- Exact alarm permission for Android 14+ policy -->
+43    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+43-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:35:5-74
+43-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:35:22-71
+44
+45    <!-- Storage Permissions for Export -->
+46    <uses-permission
+46-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:38:5-39:38
+47        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+47-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:38:22-78
+48        android:maxSdkVersion="28" />
+48-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:39:9-35
+49    <uses-permission
+49-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:40:5-41:38
+50        android:name="android.permission.READ_EXTERNAL_STORAGE"
+50-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:40:22-77
+51        android:maxSdkVersion="32" />
+51-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:41:9-35
+52
+53    <!-- For Android 13+ storage -->
+54    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+54-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:44:5-45:40
+54-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:44:22-79
+55    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+55-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:24:5-79
+55-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:24:22-76
+56
+57    <permission
+57-->[androidx.core:core:1.15.0] C:\Users\HP\.gradle\caches\8.13\transforms\0a1852be471051b5f2fcce9d1e634d36\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
+58        android:name="com.avinashpatil.app.automessage.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+58-->[androidx.core:core:1.15.0] C:\Users\HP\.gradle\caches\8.13\transforms\0a1852be471051b5f2fcce9d1e634d36\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
+59        android:protectionLevel="signature" />
+59-->[androidx.core:core:1.15.0] C:\Users\HP\.gradle\caches\8.13\transforms\0a1852be471051b5f2fcce9d1e634d36\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
+60
+61    <uses-permission android:name="com.avinashpatil.app.automessage.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+61-->[androidx.core:core:1.15.0] C:\Users\HP\.gradle\caches\8.13\transforms\0a1852be471051b5f2fcce9d1e634d36\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
+61-->[androidx.core:core:1.15.0] C:\Users\HP\.gradle\caches\8.13\transforms\0a1852be471051b5f2fcce9d1e634d36\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
+62
+63    <application
+63-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:47:5-168:19
+64        android:name="com.avinashpatil.app.automessage.AutoMessageApplication"
+64-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:48:9-47
+65        android:allowBackup="true"
+65-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:49:9-35
+66        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+66-->[androidx.core:core:1.15.0] C:\Users\HP\.gradle\caches\8.13\transforms\0a1852be471051b5f2fcce9d1e634d36\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
+67        android:dataExtractionRules="@xml/data_extraction_rules"
+67-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:50:9-65
+68        android:debuggable="true"
+69        android:extractNativeLibs="false"
+70        android:fullBackupContent="@xml/backup_rules"
+70-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:51:9-54
+71        android:icon="@mipmap/ic_launcher"
+71-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:52:9-43
+72        android:label="Auto Messaging"
+72-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:53:9-39
+73        android:roundIcon="@mipmap/ic_launcher_round"
+73-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:54:9-54
+74        android:supportsRtl="true"
+74-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:55:9-35
+75        android:theme="@style/Theme.AutoMessage" >
+75-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:56:9-49
+76
+77        <!-- Splash Screen Activity -->
+78        <activity
+78-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:58:9-67:20
+79            android:name="com.avinashpatil.app.automessage.ui.SplashActivity"
+79-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:59:13-46
+80            android:exported="true"
+80-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:60:13-36
+81            android:theme="@style/Theme.AutoMessage.Splash"
+81-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:61:13-60
+82            android:windowSoftInputMode="adjustResize" >
+82-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:62:13-55
+83            <intent-filter>
+83-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:63:13-66:29
+84                <action android:name="android.intent.action.MAIN" />
+84-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:64:17-69
+84-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:64:25-66
+85
+86                <category android:name="android.intent.category.LAUNCHER" />
+86-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:65:17-77
+86-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:65:27-74
+87            </intent-filter>
+88        </activity>
+89
+90        <!-- Main Activity -->
+91        <activity
+91-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:70:9-74:58
+92            android:name="com.avinashpatil.app.automessage.ui.MainActivity"
+92-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:71:13-44
+93            android:exported="true"
+93-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:72:13-36
+94            android:theme="@style/Theme.AutoMessage"
+94-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:73:13-53
+95            android:windowSoftInputMode="adjustResize" />
+95-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:74:13-55
+96
+97        <!-- Call Detection Service -->
+98        <service
+98-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:77:9-81:57
+99            android:name="com.avinashpatil.app.automessage.service.CallDetectionService"
+99-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:78:13-57
+100            android:enabled="true"
+100-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:79:13-35
+101            android:exported="false"
+101-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:80:13-37
+102            android:foregroundServiceType="phoneCall" />
+102-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:81:13-54
+103
+104        <!-- Phone State Broadcast Receiver -->
+105        <receiver
+105-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:84:9-92:20
+106            android:name="com.avinashpatil.app.automessage.service.PhoneStateReceiver"
+106-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:85:13-55
+107            android:enabled="true"
+107-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:86:13-35
+108            android:exported="true" >
+108-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:87:13-36
+109            <intent-filter>
+109-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:88:13-91:29
+110                <action android:name="android.intent.action.PHONE_STATE" />
+110-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:89:17-76
+110-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:89:25-73
+111                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+111-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:90:17-82
+111-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:90:25-79
+112            </intent-filter>
+113        </receiver>
+114
+115        <!-- SMS Broadcast Receiver (protected) -->
+116        <receiver
+116-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:95:9-103:20
+117            android:name="com.avinashpatil.app.automessage.service.SmsReceiver"
+117-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:96:13-48
+118            android:enabled="true"
+118-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:97:13-35
+119            android:exported="true"
+119-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:98:13-36
+120            android:permission="android.permission.BROADCAST_SMS" >
+120-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:99:13-66
+121            <intent-filter>
+121-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:100:13-102:29
+122                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+122-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:101:17-82
+122-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:101:25-79
+123            </intent-filter>
+124        </receiver>
+125
+126        <!-- Call Verification Service -->
+127        <service
+127-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:106:9-110:56
+128            android:name="com.avinashpatil.app.automessage.service.CallVerificationService"
+128-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:107:13-60
+129            android:enabled="true"
+129-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:108:13-35
+130            android:exported="false"
+130-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:109:13-37
+131            android:foregroundServiceType="dataSync" />
+131-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:110:13-53
+132
+133        <!-- Boot Receiver to start services -->
+134        <receiver
+134-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:113:9-124:20
+135            android:name="com.avinashpatil.app.automessage.service.BootReceiver"
+135-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:114:13-49
+136            android:enabled="true"
+136-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:115:13-35
+137            android:exported="true" >
+137-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:116:13-36
+138            <intent-filter>
+138-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:117:13-123:29
+139                <action android:name="android.intent.action.BOOT_COMPLETED" />
+139-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:118:17-79
+139-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:118:25-76
+140                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+140-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:119:17-84
+140-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:119:25-81
+141                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+141-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:120:17-86
+141-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:120:25-83
+142                <action android:name="android.intent.action.TIME_SET" />
+142-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:121:17-73
+142-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:121:25-70
+143                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+143-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:122:17-81
+143-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:122:25-78
+144            </intent-filter>
+145        </receiver>
+146
+147        <!-- Daily History Clear Receiver — exact 00:01 IST force clear -->
+148        <receiver
+148-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:127:9-134:20
+149            android:name="com.avinashpatil.app.automessage.receiver.DailyHistoryClearReceiver"
+149-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:128:13-63
+150            android:enabled="true"
+150-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:129:13-35
+151            android:exported="false" >
+151-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:130:13-37
+152            <intent-filter>
+152-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:131:13-133:29
+153                <action android:name="com.avinashpatil.app.automessage.ACTION_DAILY_HISTORY_CLEAR" />
+153-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:132:17-102
+153-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:132:25-99
+154            </intent-filter>
+155        </receiver>
+156
+157        <!-- Manual Verification Receiver -->
+158        <receiver
+158-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:137:9-145:20
+159            android:name="com.avinashpatil.app.automessage.service.ManualVerificationReceiver"
+159-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:138:13-63
+160            android:enabled="true"
+160-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:139:13-35
+161            android:exported="true" >
+161-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:140:13-36
+162            <intent-filter>
+162-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:141:13-144:29
+163                <action android:name="com.avinashpatil.app.automessage.ACTION_MANUAL_VERIFICATION" />
+163-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:142:17-102
+163-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:142:25-99
+164                <action android:name="com.avinashpatil.app.automessage.ACTION_MANUAL_SEND" />
+164-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:143:17-94
+164-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:143:25-91
+165            </intent-filter>
+166        </receiver>
+167
+168        <!-- KeepAlive Receiver to revive CallDetectionService -->
+169        <receiver
+169-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:148:9-155:20
+170            android:name="com.avinashpatil.app.automessage.receiver.KeepAliveReceiver"
+170-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:149:13-55
+171            android:enabled="true"
+171-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:150:13-35
+172            android:exported="true" >
+172-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:151:13-36
+173            <intent-filter>
+173-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:152:13-154:29
+174                <action android:name="com.avinashpatil.app.automessage.ACTION_KEEPALIVE" />
+174-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:153:17-92
+174-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:153:25-89
+175            </intent-filter>
+176        </receiver>
+177
+178        <!-- SMS Status Receiver for SENT/DELIVERED callbacks -->
+179        <receiver
+179-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:158:9-166:20
+180            android:name="com.avinashpatil.app.automessage.receiver.SmsStatusReceiver"
+180-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:159:13-55
+181            android:enabled="true"
+181-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:160:13-35
+182            android:exported="false" >
+182-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:161:13-37
+183            <intent-filter>
+183-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:162:13-165:29
+184                <action android:name="com.avinashpatil.app.automessage.SMS_SENT" />
+184-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:163:17-84
+184-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:163:25-81
+185                <action android:name="com.avinashpatil.app.automessage.SMS_DELIVERED" />
+185-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:164:17-89
+185-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:164:25-86
+186            </intent-filter>
+187        </receiver>
+188
+189        <provider
+189-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:29:9-37:20
+190            android:name="androidx.startup.InitializationProvider"
+190-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:30:13-67
+191            android:authorities="com.avinashpatil.app.automessage.androidx-startup"
+191-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:31:13-68
+192            android:exported="false" >
+192-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:32:13-37
+193            <meta-data
+193-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:34:13-36:52
+194                android:name="androidx.work.WorkManagerInitializer"
+194-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:35:17-68
+195                android:value="androidx.startup" />
+195-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:36:17-49
+196            <meta-data
+196-->[androidx.emoji2:emoji2:1.3.0] C:\Users\HP\.gradle\caches\8.13\transforms\885a952329070650f64d6f55e99944f9\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+197                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+197-->[androidx.emoji2:emoji2:1.3.0] C:\Users\HP\.gradle\caches\8.13\transforms\885a952329070650f64d6f55e99944f9\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:30:17-75
+198                android:value="androidx.startup" />
+198-->[androidx.emoji2:emoji2:1.3.0] C:\Users\HP\.gradle\caches\8.13\transforms\885a952329070650f64d6f55e99944f9\transformed\jetified-emoji2-1.3.0\AndroidManifest.xml:31:17-49
+199            <meta-data
+199-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\HP\.gradle\caches\8.13\transforms\bf4cc2157ecf41616ca9f49a9c3fffc7\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+200                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+200-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\HP\.gradle\caches\8.13\transforms\bf4cc2157ecf41616ca9f49a9c3fffc7\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+201                android:value="androidx.startup" />
+201-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\HP\.gradle\caches\8.13\transforms\bf4cc2157ecf41616ca9f49a9c3fffc7\transformed\jetified-lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+202            <meta-data
+202-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+203                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+203-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+204                android:value="androidx.startup" />
+204-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+205        </provider>
+206
+207        <service
+207-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:39:9-45:35
+208            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+208-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:40:13-88
+209            android:directBootAware="false"
+209-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:41:13-44
+210            android:enabled="@bool/enable_system_alarm_service_default"
+210-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:42:13-72
+211            android:exported="false" />
+211-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:43:13-37
+212        <service
+212-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:46:9-52:35
+213            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+213-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:47:13-84
+214            android:directBootAware="false"
+214-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:48:13-44
+215            android:enabled="@bool/enable_system_job_service_default"
+215-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:49:13-70
+216            android:exported="true"
+216-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:50:13-36
+217            android:permission="android.permission.BIND_JOB_SERVICE" />
+217-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:51:13-69
+218        <service
+218-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:53:9-59:35
+219            android:name="androidx.work.impl.foreground.SystemForegroundService"
+219-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:54:13-81
+220            android:directBootAware="false"
+220-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:55:13-44
+221            android:enabled="@bool/enable_system_foreground_service_default"
+221-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:56:13-77
+222            android:exported="false" />
+222-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:57:13-37
+223
+224        <receiver
+224-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:61:9-66:35
+225            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+225-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:62:13-88
+226            android:directBootAware="false"
+226-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:63:13-44
+227            android:enabled="true"
+227-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:64:13-35
+228            android:exported="false" />
+228-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:65:13-37
+229        <receiver
+229-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:67:9-77:20
+230            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+230-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:68:13-106
+231            android:directBootAware="false"
+231-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:69:13-44
+232            android:enabled="false"
+232-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:70:13-36
+233            android:exported="false" >
+233-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:71:13-37
+234            <intent-filter>
+234-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:73:13-76:29
+235                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+235-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:74:17-87
+235-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:74:25-84
+236                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+236-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:75:17-90
+236-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:75:25-87
+237            </intent-filter>
+238        </receiver>
+239        <receiver
+239-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:78:9-88:20
+240            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+240-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:79:13-104
+241            android:directBootAware="false"
+241-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:80:13-44
+242            android:enabled="false"
+242-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:81:13-36
+243            android:exported="false" >
+243-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:82:13-37
+244            <intent-filter>
+244-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:84:13-87:29
+245                <action android:name="android.intent.action.BATTERY_OKAY" />
+245-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:85:17-77
+245-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:85:25-74
+246                <action android:name="android.intent.action.BATTERY_LOW" />
+246-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:86:17-76
+246-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:86:25-73
+247            </intent-filter>
+248        </receiver>
+249        <receiver
+249-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:89:9-99:20
+250            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+250-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:90:13-104
+251            android:directBootAware="false"
+251-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:91:13-44
+252            android:enabled="false"
+252-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:92:13-36
+253            android:exported="false" >
+253-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:93:13-37
+254            <intent-filter>
+254-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:95:13-98:29
+255                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+255-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:96:17-83
+255-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:96:25-80
+256                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+256-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:97:17-82
+256-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:97:25-79
+257            </intent-filter>
+258        </receiver>
+259        <receiver
+259-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:100:9-109:20
+260            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+260-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:101:13-103
+261            android:directBootAware="false"
+261-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:102:13-44
+262            android:enabled="false"
+262-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:103:13-36
+263            android:exported="false" >
+263-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:104:13-37
+264            <intent-filter>
+264-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:106:13-108:29
+265                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+265-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:107:17-79
+265-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:107:25-76
+266            </intent-filter>
+267        </receiver>
+268        <receiver
+268-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:110:9-121:20
+269            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+269-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:111:13-88
+270            android:directBootAware="false"
+270-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:112:13-44
+271            android:enabled="false"
+271-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:113:13-36
+272            android:exported="false" >
+272-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:114:13-37
+273            <intent-filter>
+273-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:116:13-120:29
+274                <action android:name="android.intent.action.BOOT_COMPLETED" />
+274-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:118:17-79
+274-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:118:25-76
+275                <action android:name="android.intent.action.TIME_SET" />
+275-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:121:17-73
+275-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:121:25-70
+276                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+276-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:122:17-81
+276-->D:\Sonya Dada Laptop\Auto Messaging App\AutoMessaging\app\src\main\AndroidManifest.xml:122:25-78
+277            </intent-filter>
+278        </receiver>
+279        <receiver
+279-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:122:9-131:20
+280            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+280-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:123:13-99
+281            android:directBootAware="false"
+281-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:124:13-44
+282            android:enabled="@bool/enable_system_alarm_service_default"
+282-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:125:13-72
+283            android:exported="false" >
+283-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:126:13-37
+284            <intent-filter>
+284-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:128:13-130:29
+285                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+285-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:129:17-98
+285-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:129:25-95
+286            </intent-filter>
+287        </receiver>
+288        <receiver
+288-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:132:9-142:20
+289            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+289-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:133:13-78
+290            android:directBootAware="false"
+290-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:134:13-44
+291            android:enabled="true"
+291-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:135:13-35
+292            android:exported="true"
+292-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:136:13-36
+293            android:permission="android.permission.DUMP" >
+293-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:137:13-57
+294            <intent-filter>
+294-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:139:13-141:29
+295                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+295-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:140:17-88
+295-->[androidx.work:work-runtime:2.9.1] C:\Users\HP\.gradle\caches\8.13\transforms\95dc776b7601f40e0dfd2adfaa9bdbf6\transformed\work-runtime-2.9.1\AndroidManifest.xml:140:25-85
+296            </intent-filter>
+297        </receiver>
+298
+299        <activity
+299-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\HP\.gradle\caches\8.13\transforms\ae404b79d5daf3cda429297b3d861f9a\transformed\jetified-ui-tooling-release\AndroidManifest.xml:23:9-25:39
+300            android:name="androidx.compose.ui.tooling.PreviewActivity"
+300-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\HP\.gradle\caches\8.13\transforms\ae404b79d5daf3cda429297b3d861f9a\transformed\jetified-ui-tooling-release\AndroidManifest.xml:24:13-71
+301            android:exported="true" />
+301-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\HP\.gradle\caches\8.13\transforms\ae404b79d5daf3cda429297b3d861f9a\transformed\jetified-ui-tooling-release\AndroidManifest.xml:25:13-36
+302
+303        <service
+303-->[androidx.room:room-runtime:2.6.1] C:\Users\HP\.gradle\caches\8.13\transforms\5dcd7671a44e03e5c247bbb4c028ff84\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+304            android:name="androidx.room.MultiInstanceInvalidationService"
+304-->[androidx.room:room-runtime:2.6.1] C:\Users\HP\.gradle\caches\8.13\transforms\5dcd7671a44e03e5c247bbb4c028ff84\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+305            android:directBootAware="true"
+305-->[androidx.room:room-runtime:2.6.1] C:\Users\HP\.gradle\caches\8.13\transforms\5dcd7671a44e03e5c247bbb4c028ff84\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+306            android:exported="false" />
+306-->[androidx.room:room-runtime:2.6.1] C:\Users\HP\.gradle\caches\8.13\transforms\5dcd7671a44e03e5c247bbb4c028ff84\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+307
+308        <receiver
+308-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+309            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+309-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+310            android:directBootAware="false"
+310-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+311            android:enabled="true"
+311-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+312            android:exported="true"
+312-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+313            android:permission="android.permission.DUMP" >
+313-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+314            <intent-filter>
+314-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+315                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+315-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+315-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+316            </intent-filter>
+317            <intent-filter>
+317-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+318                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+318-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+318-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+319            </intent-filter>
+320            <intent-filter>
+320-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+321                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+321-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+321-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+322            </intent-filter>
+323            <intent-filter>
+323-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+324                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+324-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+324-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\HP\.gradle\caches\8.13\transforms\63cc8b1f175807b8dbf14f63ef9befd9\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+325            </intent-filter>
+326        </receiver>
+327    </application>
+328
+329</manifest>
