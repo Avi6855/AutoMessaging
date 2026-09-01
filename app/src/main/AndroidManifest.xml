@@ -78,7 +78,7 @@
             android:name=".service.CallDetectionService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="phoneCall" />
         
         <!-- Phone State Broadcast Receiver -->
         <receiver

@@ -31,7 +31,9 @@ class KeepAliveReceiver : BroadcastReceiver() {
                 } else {
                     context.startService(serviceIntent)
                 }
+                Log.d(TAG, "Service started from keepalive")
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to start service from keepalive: ${e.message}")
                 try {
                     val am = context.getSystemService(android.app.AlarmManager::class.java)
                     val pi = android.app.PendingIntent.getBroadcast(
@@ -40,18 +42,13 @@ class KeepAliveReceiver : BroadcastReceiver() {
                         Intent("com.avinashpatil.app.automessage.ACTION_KEEPALIVE").setPackage(context.packageName),
                         android.app.PendingIntent.FLAG_UPDATE_CURRENT or pendingFlags()
                     )
-
                     val triggerAt = System.currentTimeMillis() + 10_000
                     val canExact = try {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) am.canScheduleExactAlarms() else true
                     } catch (_: Throwable) { false }
-
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        if (canExact) {
-                            am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
-                        } else {
-                            am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
-                        }
+                        if (canExact) am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                        else am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
                     } else {
                         am.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
                     }
@@ -59,6 +56,30 @@ class KeepAliveReceiver : BroadcastReceiver() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to (re)start CallDetectionService", e)
+        }
+
+        // Re-arm the keepalive alarm so the chain never breaks
+        try {
+            val am = context.getSystemService(android.app.AlarmManager::class.java)
+            val pi = android.app.PendingIntent.getBroadcast(
+                context,
+                0,
+                Intent("com.avinashpatil.app.automessage.ACTION_KEEPALIVE").setPackage(context.packageName),
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or pendingFlags()
+            )
+            val triggerAt = System.currentTimeMillis() + 20 * 60_000L  // 20 minutes
+            val canExact = try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) am.canScheduleExactAlarms() else true
+            } catch (_: Throwable) { false }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (canExact) am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                else am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
+            } else {
+                am.setExact(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
+            }
+            Log.d(TAG, "Keepalive alarm re-armed for 20min")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to re-arm keepalive", e)
         }
     }
 

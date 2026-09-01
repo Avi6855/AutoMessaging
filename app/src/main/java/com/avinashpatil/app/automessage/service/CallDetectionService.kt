@@ -273,13 +273,20 @@ class CallDetectionService : Service() {
                 startForeground(
                     NOTIFICATION_ID,
                     createNotification(),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
                 )
             } else {
                 startForeground(NOTIFICATION_ID, createNotification())
             }
         } catch (se: SecurityException) {
-            android.util.Log.e(TAG, "startForeground rejected by policy", se)
+            android.util.Log.e(TAG, "startForeground rejected by policy (SecurityException)", se)
+            stopForeground(true)
+        } catch (e: IllegalStateException) {
+            // ForegroundServiceStartNotAllowedException on Android 14+ when app is in restricted background
+            android.util.Log.e(TAG, "startForeground rejected (ForegroundServiceStartNotAllowedException)", e)
+            stopForeground(true)
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "startForeground failed", e)
             stopForeground(true)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -435,6 +442,16 @@ class CallDetectionService : Service() {
         if (enabled) {
             android.util.Log.d(TAG, "AUTO_MSG: recovery requested from onDestroy")
             autoMessagingManager.scheduleKeepAlive()
+            // Also attempt immediate restart via AlarmManager (in case keepalive alone is not enough)
+            try {
+                val am = getSystemService(AlarmManager::class.java)
+                val pi = PendingIntent.getBroadcast(
+                    this, 1003,
+                    Intent("com.avinashpatil.app.automessage.ACTION_KEEPALIVE").setPackage(packageName),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                am?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5_000, pi)
+            } catch (_: Exception) {}
         } else {
             android.util.Log.d(TAG, "AUTO_MSG: recovery skipped because automation disabled")
         }
@@ -645,7 +662,47 @@ class CallDetectionService : Service() {
                 callLogEntry.type == android.provider.CallLog.Calls.INCOMING_TYPE ||
                 callLogEntry.type == android.provider.CallLog.Calls.OUTGOING_TYPE
             ) && callLogEntry.durationSec > 0
-            if (!isAnswered) { android.util.Log.d(TAG, "Not answered or duration=0, skipping for $phoneNumber"); return }
+            if (!isAnswered) {
+                // Call log race: entry may not be committed yet after call ends
+                // Retry after delay to wait for call log to be written
+                android.util.Log.d(TAG, "Call log entry not ready or not answered for $phoneNumber, retrying in 3s")
+                delay(3000)
+                val retryEntry = getLatestCallLog(phoneNumber)
+                val retryAnswered = retryEntry != null && (
+                    retryEntry.type == android.provider.CallLog.Calls.INCOMING_TYPE ||
+                    retryEntry.type == android.provider.CallLog.Calls.OUTGOING_TYPE
+                ) && retryEntry.durationSec > 0
+                if (!retryAnswered) {
+                    android.util.Log.d(TAG, "Still no answered call log for $phoneNumber after retry, skipping")
+                    return
+                }
+                // Use retry entry for the rest of the logic
+                val retryCallTypeStr = when (retryEntry.type) {
+                    android.provider.CallLog.Calls.INCOMING_TYPE -> "INCOMING_ANSWERED"
+                    android.provider.CallLog.Calls.OUTGOING_TYPE -> "OUTGOING_ANSWERED"
+                    else -> "ANSWERED_CALL"
+                }
+                val retryCallIdStr = retryEntry.id.toString()
+                val retryCanProcess = com.avinashpatil.app.automessage.utils.DuplicatePreventer.shouldProcess(
+                    this@CallDetectionService,
+                    callId = retryCallIdStr,
+                    phoneNumber = phoneNumber,
+                    windowMs = 30_000
+                )
+                if (!retryCanProcess) return
+                if (!com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.canSendNow(this@CallDetectionService)) return
+                val baseMessage = getMessageForContact(contact)
+                val message = com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.prepareMessage(baseMessage, contact)
+                try {
+                    val delaySec = dataStoreRepository.getAutoReplyDelay().first()
+                    if (delaySec > 0) { delay(delaySec * 1000L) }
+                } catch (_: Exception) {}
+                if (!autoMessagingManager.isAutoMessagingEnabled()) return
+                if (!dataStoreRepository.isAutoReplyEnabled().first()) return
+                sendAutoReply(phoneNumber, message, contact, retryCallIdStr, retryCallTypeStr)
+                com.avinashpatil.app.automessage.utils.DuplicatePreventer.markProcessed(this@CallDetectionService, retryCallIdStr, phoneNumber)
+                return
+            }
 
             val lastSeenCall = autoReplyRepository.getLastSeenCall()
             if (lastSeenCall?.callId == callLogEntry?.id?.toString()) { android.util.Log.d(TAG, "Call already processed, skipping for $phoneNumber"); return }
