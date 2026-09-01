@@ -30,7 +30,6 @@ class SmsStatusReceiver : BroadcastReceiver() {
                     val attempts = intent.getIntExtra("attempts", 1)
                     kotlinx.coroutines.runBlocking {
                         dao.markLogSent(id = logId, attempts = attempts, error = null, sentTs = now)
-                        dao.convertAllToDelivered(now)
                     }
                     notify(context, title = "Auto Messaging", text = "Message sent ✅", notificationId = 3001)
                 }

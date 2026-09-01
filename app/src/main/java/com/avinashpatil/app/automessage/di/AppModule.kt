@@ -3,7 +3,6 @@ package com.avinashpatil.app.automessage.di
 import android.app.Application
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.room.Room
 import com.avinashpatil.app.automessage.data.database.AutoMessageDatabase
 import com.avinashpatil.app.automessage.data.repository.AutoReplyRepository
 import com.avinashpatil.app.automessage.data.repository.AutoReplyRepositoryImpl
@@ -29,12 +28,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAutoMessageDatabase(app: Application): AutoMessageDatabase {
-        return Room.databaseBuilder(
-            app,
-            AutoMessageDatabase::class.java,
-            "auto_message_db"
-        ).fallbackToDestructiveMigration()
-            .build()
+        // Use the singleton instance to avoid "database is locked" from duplicate instances
+        return AutoMessageDatabase.getInstance(app)
     }
     
     @Provides
