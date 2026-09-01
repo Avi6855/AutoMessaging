@@ -30,16 +30,8 @@ class BootReceiver : BroadcastReceiver() {
                 return
             }
 
-            try {
-                val serviceIntent = Intent(context, CallDetectionService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                } else {
-                    context.startService(serviceIntent)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to start CallDetectionService on boot", e)
-            }
+            // Do NOT start FGS directly from BOOT_COMPLETED — Android 14 forbids it (ForegroundServiceStartNotAllowedException for dataSync/phoneCall).
+            // Defer to WorkManager / keepalive alarm which will run when allowed.
             try {
                 scheduleCallLogPoller(context)
             } catch (e: Exception) {

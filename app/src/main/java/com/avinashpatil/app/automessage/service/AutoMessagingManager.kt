@@ -88,15 +88,35 @@ class AutoMessagingManager @Inject constructor(
 
     private fun startCallDetectionService() {
         try {
+            // Avoid FGS start from background (e.g., Application.onCreate after BOOT) — defer to WorkManager/alarm
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !isAppInForeground()) {
+                Log.w(TAG, "Deferring FGS start (background), scheduling poller instead")
+                scheduleCallLogPoller()
+                scheduleKeepAlive(60_000)
+                return
+            }
             val serviceIntent = Intent(context, CallDetectionService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent)
             } else {
                 context.startService(serviceIntent)
             }
+        } catch (se: SecurityException) {
+            Log.w(TAG, "FGS SecurityException (phoneCall role), deferring to poller", se)
+            try { scheduleCallLogPoller() } catch (_: Exception) {}
+        } catch (ise: IllegalStateException) {
+            Log.w(TAG, "FGS not allowed in background, deferring to poller", ise)
+            try { scheduleCallLogPoller() } catch (_: Exception) {}
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start CallDetectionService", e)
         }
+    }
+
+    private fun isAppInForeground(): Boolean {
+        return try {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            am.runningAppProcesses?.any { it.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && it.processName == context.packageName } == true
+        } catch (_: Exception) { false }
     }
 
     private fun stopCallDetectionService() {
