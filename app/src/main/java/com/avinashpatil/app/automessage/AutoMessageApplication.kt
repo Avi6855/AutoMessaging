@@ -28,6 +28,7 @@ class AutoMessageApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        AutoMessagingStateChecker.init(this)
         scheduleAutoReplyHistoryClear()
 
         val enabled = AutoMessagingStateChecker.isAutoMessagingEnabled(this)

@@ -14,6 +14,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.avinashpatil.app.automessage.data.repository.DataStoreRepository
 import com.avinashpatil.app.automessage.receiver.KeepAliveReceiver
+import com.avinashpatil.app.automessage.utils.AutoMessagingStateChecker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,21 +38,30 @@ class AutoMessagingManager @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    fun isAutoMessagingEnabled(): Boolean {
-        return try {
-            val result = kotlinx.coroutines.runBlocking {
-                dataStoreRepository.getAutoMessagingEnabledOnce()
+    @Volatile
+    private var cachedAutoMessagingEnabled: Boolean = true
+
+    init {
+        scope.launch {
+            try {
+                dataStoreRepository.isAutoMessagingEnabled().collect { enabled ->
+                    cachedAutoMessagingEnabled = enabled
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error collecting auto messaging state", e)
             }
-            result
-        } catch (e: Exception) {
-            Log.e(TAG, "Error reading auto messaging state", e)
-            true
         }
+    }
+
+    fun isAutoMessagingEnabled(): Boolean {
+        return cachedAutoMessagingEnabled
     }
 
     suspend fun setAutoMessagingEnabled(enabled: Boolean) {
         Log.d(TAG, "AUTO_MSG: ${if (enabled) "enabled" else "disabled"}")
         dataStoreRepository.saveAutoMessagingEnabled(enabled)
+        cachedAutoMessagingEnabled = enabled
+        AutoMessagingStateChecker.syncEnabled(context)
 
         if (enabled) {
             startAutomation()

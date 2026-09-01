@@ -470,70 +470,92 @@ fun RecentScreen(
     }
 
     fun sendSms(number: String, text: String, contactName: String?, callType: String) {
-        try {
-            val smsManager: android.telephony.SmsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                context.getSystemService(android.telephony.SmsManager::class.java) ?: android.telephony.SmsManager.getDefault()
-            } else {
-                android.telephony.SmsManager.getDefault()
-            }
-
-            val ts = System.currentTimeMillis()
-            val dayKey = com.avinashpatil.app.automessage.utils.DailyHistoryClearScheduler.getTodayDayKey()
-            // Prevent duplicates by unique phone+dayKey (IST)
-            var logId = -1L
-            var attempts = 1
-            val preLog = com.avinashpatil.app.automessage.data.entity.AutoReplyLogEntity(
-                contactId = number,
-                contactName = contactName ?: number,
-                phoneNumber = number,
-                messageText = text,
-                timestamp = ts,
-                dayKey = dayKey,
-                callType = callType,
-                isAutoReply = true,
-                status = "PENDING",
-                attempts = 0,
-                error = null,
-                sentTimestamp = null,
-                deliveredTimestamp = null
-            )
+        scope.launch {
             try {
-                // Use ViewModel repo helpers for logging
-                // Note: running in UI thread; lightweight Room insert OK, otherwise offload to scope
-                kotlinx.coroutines.runBlocking {
-                    logId = autoReplyViewModel.logAutoReplyReturnId(preLog)
+                val smsManager: android.telephony.SmsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    context.getSystemService(android.telephony.SmsManager::class.java) ?: android.telephony.SmsManager.getDefault()
+                } else {
+                    android.telephony.SmsManager.getDefault()
                 }
-            } catch (e: Exception) {
-                if (e is android.database.sqlite.SQLiteConstraintException) {
-                    // Duplicate for phone+dayKey detected; respect existing record
-                    val existing = kotlinx.coroutines.runBlocking { autoReplyViewModel.getLogByPhoneAndDay(number, dayKey) }
-                    if (existing != null) {
-                        when (existing.status) {
-                            "DELIVERED", "SENT", "PENDING" -> return
-                            "FAILED" -> {
-                                attempts = (existing.attempts + 1).coerceAtLeast(1)
-                                logId = existing.id
+
+                val ts = System.currentTimeMillis()
+                val dayKey = com.avinashpatil.app.automessage.utils.DailyHistoryClearScheduler.getTodayDayKey()
+                var logId = -1L
+                var attempts = 1
+                val preLog = com.avinashpatil.app.automessage.data.entity.AutoReplyLogEntity(
+                    contactId = number,
+                    contactName = contactName ?: number,
+                    phoneNumber = number,
+                    messageText = text,
+                    timestamp = ts,
+                    dayKey = dayKey,
+                    callType = callType,
+                    isAutoReply = true,
+                    status = "PENDING",
+                    attempts = 0,
+                    error = null,
+                    sentTimestamp = null,
+                    deliveredTimestamp = null
+                )
+                try {
+                    logId = autoReplyViewModel.logAutoReplyReturnId(preLog)
+                } catch (e: Exception) {
+                    if (e is android.database.sqlite.SQLiteConstraintException) {
+                        val existing = autoReplyViewModel.getLogByPhoneAndDay(number, dayKey)
+                        if (existing != null) {
+                            when (existing.status) {
+                                "DELIVERED", "SENT", "PENDING" -> return@launch
+                                "FAILED" -> {
+                                    attempts = (existing.attempts + 1).coerceAtLeast(1)
+                                    logId = existing.id
+                                }
+                                else -> return@launch
                             }
-                            else -> return
+                        } else {
+                            return@launch
                         }
                     } else {
-                        return
+                        return@launch
                     }
-                } else {
-                    return
                 }
-            }
 
-            val parts = smsManager.divideMessage(text)
-            val ACTION_SMS_SENT = "com.avinashpatil.app.automessage.SMS_SENT"
-            val ACTION_SMS_DELIVERED = "com.avinashpatil.app.automessage.SMS_DELIVERED"
-            if (parts.size > 1) {
-                val sentIntents = java.util.ArrayList<android.app.PendingIntent>()
-                val deliverIntents = java.util.ArrayList<android.app.PendingIntent>()
-                for (i in parts.indices) {
+                val ACTION_SMS_SENT = "com.avinashpatil.app.automessage.SMS_SENT"
+                val ACTION_SMS_DELIVERED = "com.avinashpatil.app.automessage.SMS_DELIVERED"
+                val requestCode = (logId % Int.MAX_VALUE).toInt()
+                val parts = smsManager.divideMessage(text)
+                if (parts.size > 1) {
+                    val sentIntents = java.util.ArrayList<android.app.PendingIntent>()
+                    val deliverIntents = java.util.ArrayList<android.app.PendingIntent>()
+                    for (i in parts.indices) {
+                        val sentIntent = android.app.PendingIntent.getBroadcast(
+                            context,
+                            requestCode + i,
+                            android.content.Intent(ACTION_SMS_SENT).apply {
+                                setPackage(context.packageName)
+                                putExtra("log_id", logId)
+                                putExtra("attempts", attempts)
+                                putExtra("phone", number)
+                            },
+                            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                        )
+                        val deliveredIntent = android.app.PendingIntent.getBroadcast(
+                            context,
+                            requestCode + i + 10_000,
+                            android.content.Intent(ACTION_SMS_DELIVERED).apply {
+                                setPackage(context.packageName)
+                                putExtra("log_id", logId)
+                                putExtra("phone", number)
+                            },
+                            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+                        )
+                        sentIntents.add(sentIntent)
+                        deliverIntents.add(deliveredIntent)
+                    }
+                    smsManager.sendMultipartTextMessage(number, null, parts, sentIntents, deliverIntents)
+                } else {
                     val sentIntent = android.app.PendingIntent.getBroadcast(
                         context,
-                        i,
+                        requestCode,
                         android.content.Intent(ACTION_SMS_SENT).apply {
                             setPackage(context.packageName)
                             putExtra("log_id", logId)
@@ -544,7 +566,7 @@ fun RecentScreen(
                     )
                     val deliveredIntent = android.app.PendingIntent.getBroadcast(
                         context,
-                        i,
+                        requestCode + 10_000,
                         android.content.Intent(ACTION_SMS_DELIVERED).apply {
                             setPackage(context.packageName)
                             putExtra("log_id", logId)
@@ -552,36 +574,11 @@ fun RecentScreen(
                         },
                         android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
                     )
-                    sentIntents.add(sentIntent)
-                    deliverIntents.add(deliveredIntent)
+                    smsManager.sendTextMessage(number, null, text, sentIntent, deliveredIntent)
                 }
-                smsManager.sendMultipartTextMessage(number, null, parts, sentIntents, deliverIntents)
-            } else {
-                val sentIntent = android.app.PendingIntent.getBroadcast(
-                    context,
-                    0,
-                    android.content.Intent(ACTION_SMS_SENT).apply {
-                        setPackage(context.packageName)
-                        putExtra("log_id", logId)
-                        putExtra("attempts", attempts)
-                        putExtra("phone", number)
-                    },
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-                )
-                val deliveredIntent = android.app.PendingIntent.getBroadcast(
-                    context,
-                    0,
-                    android.content.Intent(ACTION_SMS_DELIVERED).apply {
-                        setPackage(context.packageName)
-                        putExtra("log_id", logId)
-                        putExtra("phone", number)
-                    },
-                    android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-                )
-                smsManager.sendTextMessage(number, null, text, sentIntent, deliveredIntent)
+            } catch (_: Exception) {
+                // swallow to avoid crashing UI; background service receivers handle failures
             }
-        } catch (_: Exception) {
-            // swallow to avoid crashing UI; background service receivers handle failures
         }
     }
 
@@ -601,7 +598,7 @@ fun RecentScreen(
                     return
                 }
                 
-                // Refresh call logs list immediately when new calls are detected
+                scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 loadDeviceCallLogsLambda?.invoke()
                 val uri = android.provider.CallLog.Calls.CONTENT_URI
                 val projection = arrayOf(
@@ -732,7 +729,6 @@ fun RecentScreen(
                 val attempts = intent?.getIntExtra("attempts", 1) ?: 1
                 if (result == android.app.Activity.RESULT_OK && logId > 0) {
                     scope.launch { autoReplyViewModel.markLogSent(logId, attempts) }
-                    scope.launch { autoReplyViewModel.updateAllToDelivered() }
                     scope.launch {
                         try {
                             val log = autoReplyViewModel.getAutoReplyLogById(logId)
@@ -1130,20 +1126,18 @@ fun RecentScreen(
                                                             style = MaterialTheme.typography.bodySmall,
                                                             color = NeoSecondaryText
                                                         )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                        }
+                    }
+                }
+                } // end scope.launch IO
+            }
+        }
+    }
                             }
                         }
                     }
                     1 -> {
                         // Auto Message Sent List tab with optional search
-                        LaunchedEffect(Unit) {
-                            autoReplyViewModel.updateAllToDelivered()
-                        }
                         val query = debouncedQuery
                         val base = autoReplyHistory.filter { it.isAutoReply && it.status == "DELIVERED" }
                         val filtered = if (query.isBlank()) base else base.filter { log ->

@@ -56,6 +56,25 @@ object SmsAntiSpamHelper {
             .apply()
     }
 
+    @Synchronized
+    fun recordSentIfAllowed(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val hk = hourKey()
+        val dk = dayKey()
+        val storedHourKey = prefs.getString(KEY_HOUR_KEY, "")
+        val storedDayKey = prefs.getString(KEY_DAY_KEY, "")
+        val hourCount = if (storedHourKey == hk) prefs.getInt(KEY_HOUR_COUNT, 0) else 0
+        val dayCount = if (storedDayKey == dk) prefs.getInt(KEY_DAY_COUNT, 0) else 0
+        if (hourCount >= MAX_PER_HOUR || dayCount >= MAX_PER_DAY) return false
+        prefs.edit()
+            .putString(KEY_HOUR_KEY, hk)
+            .putString(KEY_DAY_KEY, dk)
+            .putInt(KEY_HOUR_COUNT, hourCount + 1)
+            .putInt(KEY_DAY_COUNT, dayCount + 1)
+            .apply()
+        return true
+    }
+
     fun jitterDelayMs(): Long = Random.nextLong(3000L, 7000L)
 
     /**

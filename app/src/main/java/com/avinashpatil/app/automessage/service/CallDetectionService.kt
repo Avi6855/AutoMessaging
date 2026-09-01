@@ -989,8 +989,7 @@ class CallDetectionService : Service() {
             // Mark last seen call after initiating send
             autoReplyRepository.updateLastSeenCall(callId, contact?.id)
             recentlySent[phoneNumber] = System.currentTimeMillis()
-            // Record for global anti-spam rate limiting (IST)
-            com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.recordSent(this)
+            com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.recordSentIfAllowed(this)
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Failed to send auto-reply to $phoneNumber", e)
             // If we created a log row, mark as FAILED
@@ -1135,8 +1134,7 @@ class CallDetectionService : Service() {
     }
 
     private fun scheduleDailyResetWork() {
-        // Compute initial delay to next local midnight, then repeat every 24h
-        val cal = java.util.Calendar.getInstance()
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Kolkata"))
         val now = cal.timeInMillis
         cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
         cal.set(java.util.Calendar.MINUTE, 0)
