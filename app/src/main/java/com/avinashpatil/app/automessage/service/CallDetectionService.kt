@@ -244,6 +244,41 @@ class CallDetectionService : Service() {
 
         android.util.Log.d(TAG, "AUTO_MSG: service starting")
 
+        // CRITICAL: startForeground() MUST be called synchronously within 5 seconds
+        // of startForegroundService(). Do it BEFORE any coroutine work.
+        createNotificationChannel()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    createNotification(),
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, createNotification())
+            }
+        } catch (se: SecurityException) {
+            android.util.Log.e(TAG, "startForeground rejected by policy (SecurityException)", se)
+            stopSelf()
+            return
+        } catch (e: IllegalStateException) {
+            android.util.Log.e(TAG, "startForeground rejected (ForegroundServiceStartNotAllowedException)", e)
+            stopSelf()
+            return
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "startForeground failed", e)
+            stopSelf()
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(smsSentReceiver, IntentFilter(ACTION_SMS_SENT), Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(smsDeliveredReceiver, IntentFilter(ACTION_SMS_DELIVERED), Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(smsSentReceiver, IntentFilter(ACTION_SMS_SENT))
+            registerReceiver(smsDeliveredReceiver, IntentFilter(ACTION_SMS_DELIVERED))
+        }
+
         serviceScope.launch {
             val enabled = autoMessagingManager.isAutoMessagingEnabled()
             if (!enabled) {
@@ -266,36 +301,6 @@ class CallDetectionService : Service() {
     }
 
     private fun startServiceMonitoring() {
-        createNotificationChannel()
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    NOTIFICATION_ID,
-                    createNotification(),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
-                )
-            } else {
-                startForeground(NOTIFICATION_ID, createNotification())
-            }
-        } catch (se: SecurityException) {
-            android.util.Log.e(TAG, "startForeground rejected by policy (SecurityException)", se)
-            stopForeground(true)
-        } catch (e: IllegalStateException) {
-            // ForegroundServiceStartNotAllowedException on Android 14+ when app is in restricted background
-            android.util.Log.e(TAG, "startForeground rejected (ForegroundServiceStartNotAllowedException)", e)
-            stopForeground(true)
-        } catch (e: Exception) {
-            android.util.Log.e(TAG, "startForeground failed", e)
-            stopForeground(true)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(smsSentReceiver, IntentFilter(ACTION_SMS_SENT), Context.RECEIVER_NOT_EXPORTED)
-            registerReceiver(smsDeliveredReceiver, IntentFilter(ACTION_SMS_DELIVERED), Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(smsSentReceiver, IntentFilter(ACTION_SMS_SENT))
-            registerReceiver(smsDeliveredReceiver, IntentFilter(ACTION_SMS_DELIVERED))
-        }
-
         try { scheduleDailyResetWork() } catch (_: Exception) {}
 
         try {
@@ -463,13 +468,15 @@ class CallDetectionService : Service() {
             android.util.Log.d(TAG, "AUTO_MSG: onTaskRemoved skipped because automation disabled")
             return
         }
+        // On Android 12+ cannot startForegroundService from background — use alarm fallback
         try {
-            val intent = Intent(this, CallDetectionService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent)
-            } else {
-                startService(intent)
-            }
+            val am = getSystemService(AlarmManager::class.java)
+            val pi = PendingIntent.getBroadcast(
+                this, 1004,
+                Intent("com.avinashpatil.app.automessage.ACTION_KEEPALIVE").setPackage(packageName),
+                pendingFlags()
+            )
+            am?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 3_000, pi)
         } catch (_: Exception) { }
         autoMessagingManager.scheduleKeepAlive()
     }
@@ -490,15 +497,7 @@ class CallDetectionService : Service() {
     }
 
     private fun createNotification(): Notification {
-        val autoReplyEnabled = try {
-            kotlinx.coroutines.runBlocking { dataStoreRepository.isAutoReplyEnabled().first() }
-        } catch (_: Exception) { false }
-
-        val statusText = if (autoReplyEnabled) {
-            "Monitoring calls for automatic replies"
-        } else {
-            "Service active - Auto-reply paused"
-        }
+        val statusText = "Monitoring calls for automatic replies"
 
         val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("Auto Messaging Active")
