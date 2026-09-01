@@ -20,8 +20,8 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent?) {
-        val action = intent?.action ?: return
-        if (action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+        val bootAction = intent?.action ?: return
+        if (bootAction == Intent.ACTION_BOOT_COMPLETED || bootAction == Intent.ACTION_MY_PACKAGE_REPLACED) {
             val enabled = AutoMessagingStateChecker.isAutoMessagingEnabled(context)
             Log.d(TAG, "AUTO_MSG: boot received, autoMessaging=$enabled")
 
@@ -91,7 +91,7 @@ class BootReceiver : BroadcastReceiver() {
             }
         }
         // Also handle TIME_SET / TIMEZONE_CHANGED to keep alarm accurate
-        if (action == Intent.ACTION_TIME_CHANGED || action == Intent.ACTION_TIMEZONE_CHANGED) {
+        if (bootAction == Intent.ACTION_TIME_CHANGED || bootAction == Intent.ACTION_TIMEZONE_CHANGED) {
             try {
                 DailyHistoryClearScheduler.scheduleDailyClear(context)
             } catch (e: Exception) {
