@@ -56,7 +56,7 @@ class DataStoreRepositoryImpl @Inject constructor(
     
     override fun isAutoReplyEnabled(): Flow<Boolean> {
         return dataStore.data.map { preferences ->
-            preferences[AUTO_REPLY_ENABLED] ?: false
+            preferences[AUTO_REPLY_ENABLED] ?: true
         }
     }
     
