@@ -15,15 +15,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -847,8 +844,18 @@ fun RecentScreen(
                     android.content.Context.RECEIVER_NOT_EXPORTED
                 )
             } else {
-                context.registerReceiver(deliveredReceiver, filterDelivered)
-                context.registerReceiver(sentReceiver, filterSent)
+                androidx.core.content.ContextCompat.registerReceiver(
+                    context,
+                    deliveredReceiver,
+                    filterDelivered,
+                    androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+                )
+                androidx.core.content.ContextCompat.registerReceiver(
+                    context,
+                    sentReceiver,
+                    filterSent,
+                    androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+                )
             }
         } catch (_: Exception) {
         }
@@ -1163,7 +1170,7 @@ fun RecentScreen(
                                         contentPadding = PaddingValues(vertical = 8.dp),
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        itemsIndexed(deviceCallLogs) { index, callLog ->
+                                        itemsIndexed(deviceCallLogs) { index: Int, callLog: DeviceCallLog ->
                                             val isHighlighted =
                                                 highlightedIds.contains(callLog.id)
                                             val backgroundColor by animateColorAsState(
@@ -1396,10 +1403,10 @@ fun RecentScreen(
 
                                                     AutoReplyHistoryList(
                                                         history = filtered,
-                                                        onDeleteItem = { log ->
+                                                        onDeleteItem = { log: AutoReplyLogEntity ->
                                                             confirmDeleteLog = log
                                                         },
-                                                        onClickItem = { log ->
+                                                        onClickItem = { log: AutoReplyLogEntity ->
                                                             navController.navigate("message_detail/${log.id}")
                                                         }
                                                     )
@@ -1570,133 +1577,276 @@ fun RecentScreen(
                         }
                     }
 
-        // Top-level model for device call logs
-        data class DeviceCallLog(
-            val id: Long,
-            val name: String?,
-            val number: String,
-            val type: Int,
-            val date: Long,
-            val durationSec: Int
-        )
+// Top-level model for device call logs
+data class DeviceCallLog(
+    val id: Long,
+    val name: String?,
+    val number: String,
+    val type: Int,
+    val date: Long,
+    val durationSec: Int
+)
 
-        @Composable
-        private fun CallLogsList(logs: List<DeviceCallLog>, highlightedIds: Set<Long>) {
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+@Composable
+private fun CallLogsList(logs: List<DeviceCallLog>, highlightedIds: Set<Long>) {
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+                itemsIndexed(logs) { index: Int, log: DeviceCallLog ->
+            val isAnswered = (
+                    (log.type == android.provider.CallLog.Calls.INCOMING_TYPE && log.durationSec > 0) ||
+                            (log.type == android.provider.CallLog.Calls.OUTGOING_TYPE && log.durationSec > 0)
+                    )
+            val isMissed = log.type == android.provider.CallLog.Calls.MISSED_TYPE
+            val isRejected = try {
+                android.provider.CallLog.Calls.REJECTED_TYPE == log.type
+            } catch (_: Exception) {
+                false
+            }
+            val isVoicemail = log.type == android.provider.CallLog.Calls.VOICEMAIL_TYPE
+
+            // Color coding for different call types (accessible colors with high contrast)
+            val (tint, bgColor) = when {
+                // Incoming answered calls: Dark green on light green background
+                (log.type == android.provider.CallLog.Calls.INCOMING_TYPE && log.durationSec > 0) -> {
+                    Color(0xFF1B5E20) to Color(0xFFE8F5E8) // Dark green on very light green
+                }
+                // Outgoing made calls: Dark blue on light blue background
+                log.type == android.provider.CallLog.Calls.OUTGOING_TYPE -> {
+                    Color(0xFF0D47A1) to Color(0xFFE3F2FD) // Dark blue on very light blue
+                }
+                // Missed calls: Dark red on light red background
+                isMissed || isRejected -> {
+                    Color(0xFFB71C1C) to Color(0xFFFFEBEE) // Dark red on very light red
+                }
+                // Voicemail: Dark purple on light purple background
+                isVoicemail -> {
+                    Color(0xFF4A148C) to Color(0xFFF3E5F5) // Dark purple on very light purple
+                }
+                // Default fallback
+                else -> {
+                    NeoAccent to NeoSurface
+                }
+            }
+            val callIcon = when {
+                isMissed || isRejected -> Icons.AutoMirrored.Filled.CallMissed
+                log.type == android.provider.CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade
+                else -> Icons.AutoMirrored.Filled.CallReceived
+            }
+            val isHighlighted = isAnswered && highlightedIds.contains(log.id)
+            val stagger = 200 + ((index % 5) * 40)
+
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn(animationSpec = tween(durationMillis = stagger)) + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
             ) {
-                itemsIndexed(logs) { index, log ->
-                    val isAnswered = (
-                            (log.type == android.provider.CallLog.Calls.INCOMING_TYPE && log.durationSec > 0) ||
-                                    (log.type == android.provider.CallLog.Calls.OUTGOING_TYPE && log.durationSec > 0)
-                            )
-                    val isMissed = log.type == android.provider.CallLog.Calls.MISSED_TYPE
-                    val isRejected = try {
-                        android.provider.CallLog.Calls.REJECTED_TYPE == log.type
-                    } catch (_: Exception) {
-                        false
-                    }
-                    val isVoicemail = log.type == android.provider.CallLog.Calls.VOICEMAIL_TYPE
+                val targetBg =
+                    if (isHighlighted) Color(0xFF4CAF50).copy(alpha = 0.1f) else bgColor
+                val bgColor by animateColorAsState(
+                    targetValue = targetBg,
+                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 2000)
+                )
+                val iconBgTargetAlpha = if (isHighlighted) 0.25f else 0.15f
+                val iconBgAlpha by animateFloatAsState(
+                    targetValue = iconBgTargetAlpha,
+                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 2000)
+                )
 
-                    // Color coding for different call types (accessible colors with high contrast)
-                    val (tint, bgColor) = when {
-                        // Incoming answered calls: Dark green on light green background
-                        (log.type == android.provider.CallLog.Calls.INCOMING_TYPE && log.durationSec > 0) -> {
-                            Color(0xFF1B5E20) to Color(0xFFE8F5E8) // Dark green on very light green
-                        }
-                        // Outgoing made calls: Dark blue on light blue background
-                        log.type == android.provider.CallLog.Calls.OUTGOING_TYPE -> {
-                            Color(0xFF0D47A1) to Color(0xFFE3F2FD) // Dark blue on very light blue
-                        }
-                        // Missed calls: Dark red on light red background
-                        isMissed || isRejected -> {
-                            Color(0xFFB71C1C) to Color(0xFFFFEBEE) // Dark red on very light red
-                        }
-                        // Voicemail: Dark purple on light purple background
-                        isVoicemail -> {
-                            Color(0xFF4A148C) to Color(0xFFF3E5F5) // Dark purple on very light purple
-                        }
-                        // Default fallback
-                        else -> {
-                            NeoAccent to NeoSurface
-                        }
-                    }
-                    val callIcon = when {
-                        isMissed || isRejected -> Icons.AutoMirrored.Filled.CallMissed
-                        log.type == android.provider.CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade
-                        else -> Icons.AutoMirrored.Filled.CallReceived
-                    }
-                    val isHighlighted = isAnswered && highlightedIds.contains(log.id)
-                    val stagger = 200 + ((index % 5) * 40)
-
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn(animationSpec = tween(durationMillis = stagger)) + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
+                NeumorphicCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(bgColor, RoundedCornerShape(20.dp))
+                            .padding(16.dp)
                     ) {
-                        val targetBg =
-                            if (isHighlighted) Color(0xFF4CAF50).copy(alpha = 0.1f) else bgColor
-                        val bgColor by animateColorAsState(
-                            targetValue = targetBg,
-                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 2000)
-                        )
-                        val iconBgTargetAlpha = if (isHighlighted) 0.25f else 0.15f
-                        val iconBgAlpha by animateFloatAsState(
-                            targetValue = iconBgTargetAlpha,
-                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 2000)
-                        )
-
-                        NeumorphicCard(
-                            modifier = Modifier.fillMaxWidth()
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(bgColor, RoundedCornerShape(20.dp))
-                                    .padding(16.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = log.name ?: "Unknown",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = NeoPrimaryText,
-                                            fontWeight = FontWeight.SemiBold,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = log.number,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = NeoSecondaryText,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(tint.copy(alpha = iconBgAlpha)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = callIcon,
-                                            contentDescription = null,
-                                            tint = tint,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "${formatDateOnly(log.date)} • ${formatTime(log.date)}",
+                                    text = log.name ?: "Unknown",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = NeoPrimaryText,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = log.number,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = NeoSecondaryText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(tint.copy(alpha = iconBgAlpha)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = callIcon,
+                                    contentDescription = null,
+                                    tint = tint,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${formatDateOnly(log.date)} • ${formatTime(log.date)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = NeoSecondaryText
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        NeumorphicCard(
+            modifier = Modifier.size(80.dp),
+            cornerRadius = 40.dp,
+            elevation = 4.dp,
+            backgroundColor = NeoSurface
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Phone,
+                    contentDescription = "No recent calls",
+                    modifier = Modifier.size(40.dp),
+                    tint = NeoSecondaryText
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "No recent auto-replies",
+            style = MaterialTheme.typography.titleMedium,
+            color = NeoPrimaryText
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Auto-replies will appear here after calls end",
+            style = MaterialTheme.typography.bodyMedium,
+            color = NeoSecondaryText,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun AutoReplyHistoryList(
+    history: List<AutoReplyLogEntity>,
+    onDeleteItem: (AutoReplyLogEntity) -> Unit,
+    onClickItem: (AutoReplyLogEntity) -> Unit
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        itemsIndexed(history) { index: Int, log: AutoReplyLogEntity ->
+            val stagger = 180 + ((index % 5) * 40)
+            val snippet = log.messageText.split('\n').firstOrNull().orEmpty()
+
+            // Status visuals
+            val (statusLabel, statusColor) = when (log.status) {
+                "DELIVERED" -> "Delivered" to Color(0xFF2E7D32)
+                "SENT" -> "Sent" to Color(0xFF1565C0)
+                "FAILED" -> "Failed" to Color(0xFFC62828)
+                else -> "Pending" to Color(0xFFF9A825)
+            }
+
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn(animationSpec = tween(durationMillis = stagger)) + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                NeumorphicCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onClickItem(log) }
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(statusColor.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Phone,
+                                    contentDescription = null,
+                                    tint = statusColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = log.contactName.ifEmpty { log.phoneNumber },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = NeoPrimaryText,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = snippet,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = NeoSecondaryText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = statusLabel,
+                                    color = statusColor,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = formatTime(log.timestamp),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = NeoSecondaryText
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(NeoSecondaryText.copy(alpha = 0.1f))
+                                    .clickable { onDeleteItem(log) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = NeoSecondaryText,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
@@ -1704,149 +1854,5 @@ fun RecentScreen(
                 }
             }
         }
-
-        @Composable
-        private fun EmptyState() {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                NeumorphicCard(
-                    modifier = Modifier.size(80.dp),
-                    cornerRadius = 40.dp,
-                    elevation = 4.dp,
-                    backgroundColor = NeoSurface
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Phone,
-                            contentDescription = "No recent calls",
-                            modifier = Modifier.size(40.dp),
-                            tint = NeoSecondaryText
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "No recent auto-replies",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = NeoPrimaryText
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Auto-replies will appear here after calls end",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = NeoSecondaryText,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-        }
-
-        @Composable
-        private fun AutoReplyHistoryList(
-            history: List<AutoReplyLogEntity>,
-            onDeleteItem: (AutoReplyLogEntity) -> Unit,
-            onClickItem: (AutoReplyLogEntity) -> Unit
-        ) {
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                itemsIndexed(history) { index, log ->
-                    val stagger = 180 + ((index % 5) * 40)
-                    val snippet = log.messageText.split('\n').firstOrNull().orEmpty()
-
-                    // Status visuals
-                    val (statusLabel, statusColor) = when (log.status) {
-                        "DELIVERED" -> "Delivered" to Color(0xFF2E7D32)
-                        "SENT" -> "Sent" to Color(0xFF1565C0)
-                        "FAILED" -> "Failed" to Color(0xFFC62828)
-                        else -> "Pending" to Color(0xFFF9A825)
-                    }
-
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn(animationSpec = tween(durationMillis = stagger)) + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        NeumorphicCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onClickItem(log) }
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(statusColor.copy(alpha = 0.15f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Phone,
-                                            contentDescription = null,
-                                            tint = statusColor,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = log.contactName.ifEmpty { log.phoneNumber },
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = NeoPrimaryText,
-                                            fontWeight = FontWeight.SemiBold,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = snippet,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = NeoSecondaryText,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text(
-                                            text = statusLabel,
-                                            color = statusColor,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                        Text(
-                                            text = formatTime(log.timestamp),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = NeoSecondaryText
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(NeoSecondaryText.copy(alpha = 0.1f))
-                                            .clickable { onDeleteItem(log) },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete",
-                                            tint = NeoSecondaryText,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    }
 }
