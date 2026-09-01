@@ -32,6 +32,12 @@ class KeepAliveReceiver : BroadcastReceiver() {
                     context.startService(serviceIntent)
                 }
                 Log.d(TAG, "Service started from keepalive")
+            } catch (se: SecurityException) {
+                Log.w(TAG, "Keepalive FGS SecurityException (missing dialer role) - deferring: ${se.message}")
+                // Do NOT schedule immediate 10s retry for SecurityException - will loop. Rely on 20min re-arm below.
+            } catch (ise: IllegalStateException) {
+                Log.w(TAG, "Keepalive FGS not allowed in background (mAllowStartForeground false) - deferring")
+                // Defer to next 20min alarm instead of tight 10s loop
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start service from keepalive: ${e.message}")
                 try {
@@ -42,7 +48,7 @@ class KeepAliveReceiver : BroadcastReceiver() {
                         Intent("com.avinashpatil.app.automessage.ACTION_KEEPALIVE").setPackage(context.packageName),
                         android.app.PendingIntent.FLAG_UPDATE_CURRENT or pendingFlags()
                     )
-                    val triggerAt = System.currentTimeMillis() + 10_000
+                    val triggerAt = System.currentTimeMillis() + 30_000
                     val canExact = try {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) am.canScheduleExactAlarms() else true
                     } catch (_: Throwable) { false }

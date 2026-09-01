@@ -21,6 +21,8 @@
     <!-- Foreground service type permissions for Android 14+ -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SHORT_SERVICE" />
     
     <!-- Boot completed permission to start services automatically -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -78,7 +80,11 @@
             android:name=".service.CallDetectionService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="phoneCall" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="callDetection_autoReply" />
+        </service>
         
         <!-- Phone State Broadcast Receiver -->
         <receiver
@@ -107,7 +113,7 @@
             android:name=".service.CallVerificationService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="shortService" />
         
         <!-- Boot Receiver to start services -->
         <receiver

@@ -45,7 +45,25 @@ class CallVerificationService : Service() {
             return
         }
         createNotificationChannel()
-        startForeground(NOTIF_ID, createNotification())
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                androidx.core.app.ServiceCompat.startForeground(this, NOTIF_ID, createNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
+            } else {
+                startForeground(NOTIF_ID, createNotification())
+            }
+        } catch (se: SecurityException) {
+            android.util.Log.e(TAG, "FGS SecurityException", se)
+            stopSelf()
+            return
+        } catch (e: IllegalStateException) {
+            android.util.Log.e(TAG, "FGS not allowed", e)
+            stopSelf()
+            return
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "startForeground failed", e)
+            stopSelf()
+            return
+        }
         scope.launch { verificationLoop() }
     }
 
@@ -90,14 +108,14 @@ class CallVerificationService : Service() {
     }
 
     private suspend fun verificationLoop() {
-        while (true) {
-            try {
-                runVerificationOnce()
-            } catch (e: Exception) {
-                android.util.Log.e(TAG, "Verification loop error", e)
-            }
-            delay(15 * 60_000) // every 15 minutes
+        try {
+            runVerificationOnce()
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Verification loop error", e)
         }
+        // shortService must stop within 3 minutes — schedule next run via WorkManager/Alarm instead of infinite loop
+        delay(10_000)
+        stopSelf()
     }
 
     private suspend fun runVerificationOnce() {

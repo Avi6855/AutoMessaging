@@ -69,6 +69,8 @@ class CallDetectionService : Service() {
     private var callStateListener: PhoneStateListener? = null
     private var callStateCallback: TelephonyCallback? = null
     private var callLogObserver: android.database.ContentObserver? = null
+    @Volatile private var gracefulStopDueToPolicy: Boolean = false
+    private var serviceStartTimeMs: Long = 0L
 
     private fun hasSentRecently(phoneNumber: String, windowMs: Long = 30_000): Boolean {
         val ctx = this@CallDetectionService
@@ -242,31 +244,39 @@ class CallDetectionService : Service() {
     override fun onCreate() {
         super.onCreate()
 
+        serviceStartTimeMs = System.currentTimeMillis()
+        gracefulStopDueToPolicy = false
         android.util.Log.d(TAG, "AUTO_MSG: service starting")
 
         // CRITICAL: startForeground() MUST be called synchronously within 5 seconds
         // of startForegroundService(). Do it BEFORE any coroutine work.
         createNotificationChannel()
+        val notification = createNotification()
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    NOTIFICATION_ID,
-                    createNotification(),
-                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
-                )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                val type = if (hasDialerRole()) android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL else android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                androidx.core.app.ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Use ServiceCompat for consistent handling; fallback to phoneCall (manifest declares phoneCall+specialUse, specialUse requires U+)
+                androidx.core.app.ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL)
             } else {
-                startForeground(NOTIFICATION_ID, createNotification())
+                startForeground(NOTIFICATION_ID, notification)
             }
         } catch (se: SecurityException) {
             android.util.Log.e(TAG, "startForeground rejected by policy (SecurityException)", se)
+            gracefulStopDueToPolicy = true
             stopSelf()
             return
         } catch (e: IllegalStateException) {
             android.util.Log.e(TAG, "startForeground rejected (ForegroundServiceStartNotAllowedException)", e)
+            gracefulStopDueToPolicy = true
+            // Fallback: schedule WorkManager poll instead of FGS when background start not allowed (BOOT_COMPLETED etc.)
+            try { schedulePollerFallback() } catch (_: Exception) {}
             stopSelf()
             return
         } catch (e: Exception) {
             android.util.Log.e(TAG, "startForeground failed", e)
+            gracefulStopDueToPolicy = true
             stopSelf()
             return
         }
@@ -358,30 +368,8 @@ class CallDetectionService : Service() {
         }
 
         autoMessagingManager.scheduleKeepAlive()
-
-        serviceScope.launch {
-            while (true) {
-                try {
-                    if (!autoMessagingManager.isAutoMessagingEnabled()) {
-                        android.util.Log.d(TAG, "AUTO_MSG: poller exiting because automation disabled")
-                        break
-                    }
-                    withWakeLock {
-                        val latest = getLatestAnsweredCallFromLog()
-                        if (latest != null) {
-                            val lastSeen = autoReplyRepository.getLastSeenCall()
-                            if (lastSeen?.callId != latest.id.toString()) {
-                                android.util.Log.d(TAG, "Poller detected new answered call id=${latest.id} number=${latest.number}")
-                                checkAndSendAutoReply(latest.number)
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e(TAG, "Poller error", e)
-                }
-                delay(60_000)
-            }
-        }
+        // Polling is now handled by CallLogPollerWorker (WorkManager) every 15m.
+        // Keep FGS lightweight: only ContentObserver + TelephonyCallback, no infinite while loop to avoid FGS timeout.
 
         android.util.Log.d(TAG, "AUTO_MSG: service started")
     }
@@ -442,11 +430,21 @@ class CallDetectionService : Service() {
                 }
             }
         } catch (_: Exception) {}
+        if (gracefulStopDueToPolicy) {
+            android.util.Log.d(TAG, "AUTO_MSG: recovery skipped due to policy violation (SecurityException/NotAllowed)")
+            return
+        }
+        // Avoid tight restart loop if service died quickly (<60s uptime)
+        if (System.currentTimeMillis() - serviceStartTimeMs < 60_000) {
+            android.util.Log.w(TAG, "AUTO_MSG: service died quickly, deferring recovery to WorkManager only")
+            try { schedulePollerFallback() } catch (_: Exception) {}
+            return
+        }
         val enabled = try { autoMessagingManager.isAutoMessagingEnabled() } catch (_: Exception) { true }
         if (enabled) {
             android.util.Log.d(TAG, "AUTO_MSG: recovery requested from onDestroy")
             autoMessagingManager.scheduleKeepAlive()
-            // Also attempt immediate restart via AlarmManager (in case keepalive alone is not enough)
+            // Also attempt restart via AlarmManager with backoff
             try {
                 val am = getSystemService(AlarmManager::class.java)
                 val pi = PendingIntent.getBroadcast(
@@ -454,7 +452,7 @@ class CallDetectionService : Service() {
                     Intent("com.avinashpatil.app.automessage.ACTION_KEEPALIVE").setPackage(packageName),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                am?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5_000, pi)
+                am?.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 30_000, pi)
             } catch (_: Exception) {}
         } else {
             android.util.Log.d(TAG, "AUTO_MSG: recovery skipped because automation disabled")
@@ -552,6 +550,30 @@ class CallDetectionService : Service() {
 
     private fun scheduleKeepAlive(intervalMs: Long = 20 * 60_000) {
         autoMessagingManager.scheduleKeepAlive(intervalMs)
+    }
+
+    private fun hasDialerRole(): Boolean {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val rm = getSystemService(android.app.role.RoleManager::class.java)
+                rm.isRoleHeld(android.app.role.RoleManager.ROLE_DIALER)
+            } else false
+        } catch (_: Exception) { false }
+    }
+
+    private fun schedulePollerFallback() {
+        try {
+            val constraints = Constraints.Builder().build()
+            val request = PeriodicWorkRequestBuilder<CallLogPollerWorker>(15, TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .addTag("CallLogPollerWork")
+                .build()
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "CallLogPollerWork",
+                ExistingPeriodicWorkPolicy.KEEP,
+                request
+            )
+        } catch (_: Exception) {}
     }
 
     private fun handleCallStateChanged(state: String?, phoneNumber: String?) {

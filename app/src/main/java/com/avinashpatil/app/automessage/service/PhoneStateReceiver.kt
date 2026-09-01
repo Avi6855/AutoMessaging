@@ -62,22 +62,31 @@ class PhoneStateReceiver : BroadcastReceiver() {
             }
             Log.d(TAG, "Service started directly with intent action=${serviceIntent.action}")
             return
+        } catch (se: SecurityException) {
+            Log.w(TAG, "FGS SecurityException (missing phoneCall permission/role) - deferring to alarm: ${se.message}")
+            // Don't try plain fallback - same SecurityException will reoccur
+        } catch (ise: IllegalStateException) {
+            Log.w(TAG, "FGS not allowed in background (mAllowStartForeground false) - deferring to alarm")
+            // Don't try plain fallback - same NotAllowed will reoccur
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start service directly: ${e.message}")
-        }
-
-        // Fallback: try starting the service without extras (just to get it alive)
-        try {
-            val plainIntent = Intent(context, CallDetectionService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(plainIntent)
-            } else {
-                context.startService(plainIntent)
+            // Only try plain fallback for generic failures
+            try {
+                val plainIntent = Intent(context, CallDetectionService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(plainIntent)
+                } else {
+                    context.startService(plainIntent)
+                }
+                Log.d(TAG, "Service started (plain fallback)")
+                return
+            } catch (se2: SecurityException) {
+                Log.w(TAG, "Plain fallback SecurityException - deferring")
+            } catch (ise2: IllegalStateException) {
+                Log.w(TAG, "Plain fallback not allowed - deferring")
+            } catch (e2: Exception) {
+                Log.e(TAG, "Failed to start service (plain fallback): ${e2.message}")
             }
-            Log.d(TAG, "Service started (plain fallback)")
-            return
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start service (plain fallback): ${e.message}")
         }
 
         // Last resort: schedule an alarm to restart the service in 3 seconds

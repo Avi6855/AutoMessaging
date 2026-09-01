@@ -27,14 +27,10 @@ class CallLogPollerWorker(
                 return Result.success()
             }
 
-            val intent = Intent(applicationContext, CallDetectionService::class.java)
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    applicationContext.startForegroundService(intent)
-                } else {
-                    applicationContext.startService(intent)
-                }
-            } catch (_: Exception) {}
+            // Do NOT start FGS from Worker — causes ForegroundServiceDidNotStopInTimeException and Time limit exhausted.
+            // Worker itself can do lightweight poll if needed; otherwise just keep WorkManager alive.
+            // Optionally set foreground for Worker itself if needed:
+            // setForeground(createForegroundInfo())  // requires shortService type if used
             Result.success()
         } catch (e: Exception) {
             Result.retry()

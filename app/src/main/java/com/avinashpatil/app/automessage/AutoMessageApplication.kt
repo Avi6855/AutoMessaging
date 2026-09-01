@@ -67,6 +67,12 @@ class AutoMessageApplication : Application() {
 
     private fun startCallDetectionService() {
         try {
+            // Avoid FGS start when app is in background (e.g., after BOOT_COMPLETED) — will throw ForegroundServiceStartNotAllowedException on Android 12+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !isAppInForeground()) {
+                Log.w("AutoMessageApplication", "AUTO_MSG: deferring service start (background), scheduling poller instead")
+                scheduleCallLogPoller()
+                return
+            }
             val serviceIntent = android.content.Intent(this, com.avinashpatil.app.automessage.service.CallDetectionService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent)
@@ -74,9 +80,22 @@ class AutoMessageApplication : Application() {
                 startService(serviceIntent)
             }
             Log.d("AutoMessageApplication", "AUTO_MSG: CallDetectionService started")
+        } catch (e: SecurityException) {
+            Log.e("AutoMessageApplication", "AUTO_MSG: FGS SecurityException, falling back to poller", e)
+            try { scheduleCallLogPoller() } catch (_: Exception) {}
+        } catch (e: IllegalStateException) {
+            Log.e("AutoMessageApplication", "AUTO_MSG: FGS not allowed in background, falling back to poller", e)
+            try { scheduleCallLogPoller() } catch (_: Exception) {}
         } catch (e: Exception) {
             Log.e("AutoMessageApplication", "AUTO_MSG: Failed to start CallDetectionService", e)
         }
+    }
+
+    private fun isAppInForeground(): Boolean {
+        return try {
+            val am = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            am.runningAppProcesses?.any { it.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && it.processName == packageName } == true
+        } catch (_: Exception) { false }
     }
 
     private fun scheduleCallLogPoller() {
