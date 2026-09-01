@@ -49,6 +49,21 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 DailyHistoryClearScheduler.scheduleDailyClear(context)
                 AutoReplyHistoryClearWorker.scheduleDailyClear(context)
+                // Re-arm keepalive alarm (lost on reboot)
+                try {
+                    val am = context.getSystemService(android.app.AlarmManager::class.java)
+                    val intent = android.content.Intent(context, com.avinashpatil.app.automessage.receiver.KeepAliveReceiver::class.java).apply {
+                        action = "com.avinashpatil.app.automessage.ACTION_KEEPALIVE"
+                    }
+                    val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE else android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                    val pi = android.app.PendingIntent.getBroadcast(context, 0, intent, flags)
+                    val triggerAt = System.currentTimeMillis() + 20 * 60_000L
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        am?.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                    } else {
+                        am?.set(android.app.AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                    }
+                } catch (_: Exception) {}
                 // Also reschedule DailyResetWorker fallback
                 val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Kolkata"))
                 val now = cal.timeInMillis

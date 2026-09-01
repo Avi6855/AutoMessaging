@@ -225,6 +225,7 @@ class GroupDetailsViewModel @Inject constructor(
                         application,
                         (batchId + i).toInt(),
                         Intent("SMS_SENT_GROUP").apply {
+                            setPackage(application.packageName)
                             putExtra("phone", phoneNumber)
                             putExtra("batchId", batchId)
                             putExtra("partIndex", i)
@@ -235,6 +236,7 @@ class GroupDetailsViewModel @Inject constructor(
                         application,
                         (batchId + i + 10_000).toInt(),
                         Intent("SMS_DELIVERED_GROUP").apply {
+                            setPackage(application.packageName)
                             putExtra("phone", phoneNumber)
                             putExtra("batchId", batchId)
                             putExtra("partIndex", i)
@@ -252,6 +254,7 @@ class GroupDetailsViewModel @Inject constructor(
                     application,
                     (batchId).toInt(),
                     Intent("SMS_SENT_GROUP").apply {
+                        setPackage(application.packageName)
                         putExtra("phone", phoneNumber)
                         putExtra("batchId", batchId)
                     },
@@ -261,6 +264,7 @@ class GroupDetailsViewModel @Inject constructor(
                     application,
                     (batchId + 10_000).toInt(),
                     Intent("SMS_DELIVERED_GROUP").apply {
+                        setPackage(application.packageName)
                         putExtra("phone", phoneNumber)
                         putExtra("batchId", batchId)
                     },
@@ -300,8 +304,8 @@ class GroupDetailsViewModel @Inject constructor(
             }
         }
 
-        application.registerReceiver(smsSentReceiver, IntentFilter("SMS_SENT_GROUP"))
-        application.registerReceiver(smsDeliveredReceiver, IntentFilter("SMS_DELIVERED_GROUP"))
+        application.registerReceiver(smsSentReceiver, IntentFilter("SMS_SENT_GROUP"), android.content.Context.RECEIVER_NOT_EXPORTED)
+        application.registerReceiver(smsDeliveredReceiver, IntentFilter("SMS_DELIVERED_GROUP"), android.content.Context.RECEIVER_NOT_EXPORTED)
     }
 
     fun clearError() {

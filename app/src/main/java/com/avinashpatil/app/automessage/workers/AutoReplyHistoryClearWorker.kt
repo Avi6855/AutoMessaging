@@ -49,8 +49,8 @@ class AutoReplyHistoryClearWorker(
         }
         
         private fun calculateInitialDelay(): Long {
-            val now = Calendar.getInstance()
-            val midnight = Calendar.getInstance().apply {
+            val now = Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Kolkata"))
+            val midnight = Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Kolkata")).apply {
                 set(Calendar.HOUR_OF_DAY, 0)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
