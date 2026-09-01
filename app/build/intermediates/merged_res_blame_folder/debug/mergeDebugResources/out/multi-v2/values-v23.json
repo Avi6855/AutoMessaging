@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.avinashpatil.app.automessage.app-mergeDebugResources-68:/values-v23/values-v23.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\HP\\.gradle\\caches\\8.13\\transforms\\95dc776b7601f40e0dfd2adfaa9bdbf6\\transformed\\work-runtime-2.9.1\\res\\values-v23\\values-v23.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,121",
+                        "endColumns": "65,62",
+                        "endOffsets": "116,179"
+                    }
+                }
+            ]
+        }
+    ]
+}

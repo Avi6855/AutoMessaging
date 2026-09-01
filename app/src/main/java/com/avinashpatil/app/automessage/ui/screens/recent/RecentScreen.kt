@@ -1126,13 +1126,12 @@ fun RecentScreen(
                                                             style = MaterialTheme.typography.bodySmall,
                                                             color = NeoSecondaryText
                                                         )
-                        }
-                    }
-                }
-                } // end scope.launch IO
-            }
-        }
-    }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
