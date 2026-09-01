@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
+import android.app.PendingIntent
 import android.os.Build
 import android.util.Log
 import com.avinashpatil.app.automessage.utils.AutoMessagingStateChecker
