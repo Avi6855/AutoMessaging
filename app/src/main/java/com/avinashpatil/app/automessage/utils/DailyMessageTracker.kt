@@ -20,7 +20,7 @@ object DailyMessageTracker {
     
     fun hasSentToday(context: Context, phoneNumber: String): Boolean {
         val prefs = getPreferences(context)
-        val lastSentDate = prefs.getString(KEY_PREFIX + phoneNumber, "") ?: ""
+        val lastSentDate = prefs.getString(KEY_PREFIX + PhoneNumberUtils.normalize(phoneNumber), "") ?: ""
         val today = todayKey()
         return lastSentDate == today
     }
@@ -28,12 +28,12 @@ object DailyMessageTracker {
     fun markSentToday(context: Context, phoneNumber: String) {
         val prefs = getPreferences(context)
         val today = todayKey()
-        prefs.edit().putString(KEY_PREFIX + phoneNumber, today).apply()
+        prefs.edit().putString(KEY_PREFIX + PhoneNumberUtils.normalize(phoneNumber), today).apply()
     }
-    
+
     fun clearSentHistory(context: Context, phoneNumber: String) {
         val prefs = getPreferences(context)
-        prefs.edit().remove(KEY_PREFIX + phoneNumber).apply()
+        prefs.edit().remove(KEY_PREFIX + PhoneNumberUtils.normalize(phoneNumber)).apply()
     }
     
     fun clearAllHistory(context: Context) {
@@ -43,6 +43,6 @@ object DailyMessageTracker {
     
     fun getLastSentDate(context: Context, phoneNumber: String): String? {
         val prefs = getPreferences(context)
-        return prefs.getString(KEY_PREFIX + phoneNumber, null)
+        return prefs.getString(KEY_PREFIX + PhoneNumberUtils.normalize(phoneNumber), null)
     }
 }

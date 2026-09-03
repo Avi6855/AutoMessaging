@@ -72,11 +72,31 @@ class CallDetectionService : Service() {
     @Volatile private var gracefulStopDueToPolicy: Boolean = false
     private var serviceStartTimeMs: Long = 0L
 
+    private fun norm(phoneNumber: String?): String =
+        com.avinashpatil.app.automessage.utils.PhoneNumberUtils.normalize(phoneNumber)
+
+    private fun resolveCallNumber(passed: String?): String? {
+        if (!passed.isNullOrBlank()) return passed
+        // TelephonyCallback on Android S+ gives no number; recover from persisted receiver number
+        val persisted = try {
+            com.avinashpatil.app.automessage.service.PhoneStateReceiver.getLastTelecomNumber(this)
+        } catch (_: Exception) { null }
+        if (!persisted.isNullOrBlank()) return persisted
+        return null
+    }
+
+    private fun persistCallNumber(number: String?) {
+        if (number.isNullOrBlank()) return
+        try {
+            com.avinashpatil.app.automessage.service.PhoneStateReceiver.persistLastTelecomNumber(this, number)
+        } catch (_: Exception) {}
+    }
+
     private fun hasSentRecently(phoneNumber: String, windowMs: Long = 30_000): Boolean {
         val ctx = this@CallDetectionService
         val prefRecent = com.avinashpatil.app.automessage.utils.DuplicatePreventer.hasSentRecently(ctx, phoneNumber, windowMs)
         if (prefRecent) return true
-        val last = recentlySent[phoneNumber] ?: return false
+        val last = recentlySent[norm(phoneNumber)] ?: return false
         return System.currentTimeMillis() - last < windowMs
     }
 
@@ -307,6 +327,33 @@ class CallDetectionService : Service() {
             } catch (_: Exception) { }
 
             startServiceMonitoring()
+            // Backfill calls missed while the service was dead (night/Doze/FGS-blocked).
+            // Runs oldest-first so 6:09 sends before 6:46 instead of only the latest.
+            backfillMissedCalls()
+        }
+    }
+
+    private suspend fun backfillMissedCalls() {
+        try {
+            if (!autoMessagingManager.isAutoMessagingEnabled()) return
+            if (!dataStoreRepository.isAutoReplyEnabled().first()) return
+            val since = System.currentTimeMillis() - com.avinashpatil.app.automessage.utils.MissedCallBackfill.BACKFILL_WINDOW_MS
+            val missed = com.avinashpatil.app.automessage.utils.MissedCallBackfill.getAnsweredCallsSince(
+                this, since, 50
+            ).take(com.avinashpatil.app.automessage.utils.MissedCallBackfill.MAX_PER_RUN)
+            if (missed.isEmpty()) return
+            android.util.Log.d(TAG, "AUTO_MSG: backfilling ${missed.size} missed answered calls")
+            for (call in missed) {
+                try {
+                    if (!autoMessagingManager.isAutoMessagingEnabled()) break
+                    checkAndSendAutoReply(norm(call.number))
+                    delay(2000)
+                } catch (e: Exception) {
+                    android.util.Log.e(TAG, "Backfill error for ${call.number}", e)
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Backfill failed", e)
         }
     }
 
@@ -396,7 +443,8 @@ class CallDetectionService : Service() {
                 }
             }
             ACTION_KEEPALIVE -> {
-                // No-op; ensures service stays sticky
+                // Keepalive revival: also backfill anything missed while dead
+                serviceScope.launch { backfillMissedCalls() }
             }
         }
         return START_STICKY
@@ -585,8 +633,11 @@ class CallDetectionService : Service() {
             TelephonyManager.EXTRA_STATE_OFFHOOK -> {
                 // Call answered: mark number as answered for successful call tracking
                 serviceScope.launch {
-                    val number = phoneNumber ?: getLatestNumberFromLog()
-                    if (!number.isNullOrBlank()) {
+                    val raw = resolveCallNumber(phoneNumber) ?: getLatestNumberFromLog()
+                    val number = norm(raw)
+                    if (number.isNotBlank()) {
+                        persistCallNumber(raw)
+                        // Also persist for the receiver path so a restart between OFFHOOK and IDLE still resolves
                         val now = System.currentTimeMillis()
                         answeredNumbers[number] = now
                         val isOutgoing = lastOutgoingDialed[number]?.let { now - it < 5 * 60_000 } ?: false
@@ -603,22 +654,19 @@ class CallDetectionService : Service() {
                         return@launch
                     }
                     withWakeLock {
-                        val number = phoneNumber ?: getLatestNumberFromLog()
-                        if (!number.isNullOrBlank()) {
+                        val raw = resolveCallNumber(phoneNumber) ?: getLatestNumberFromLog()
+                        val number = norm(raw)
+                        if (number.isNotBlank()) {
                             val wasAnswered = answeredNumbers.containsKey(number)
-                            val callTypeStr = callTypeByNumber[number] ?: "ANSWERED_CALL"
                             // Cleanup state
                             answeredNumbers.remove(number)
                             callTypeByNumber.remove(number)
                             lastOutgoingDialed.remove(number)
-                            android.util.Log.d(TAG, "Call ended: $number, wasAnswered: $wasAnswered")
-                            if (wasAnswered && !hasSentRecently(number)) {
-                                // Rely on call log to confirm answered duration and call type; respects delay setting
-                                android.util.Log.d(TAG, "Checking call log before sending auto-reply: $number")
-                                checkAndSendAutoReply(number)
-                            } else if (!wasAnswered) {
-                                android.util.Log.d(TAG, "Call not answered, skipping auto-reply: $number")
-                            }
+                            android.util.Log.d(TAG, "Call ended: $number, wasAnswered: $wasAnswered (instant verify)")
+                            // ALWAYS verify via call log on IDLE: if OFFHOOK was missed while the
+                            // service was dead, wasAnswered=false but the call may still be answered.
+                            // checkAndSendAutoReply filters missed (duration 0) / duplicates / daily itself.
+                            checkAndSendAutoReply(number)
                         }
                     }
                 }
@@ -628,8 +676,10 @@ class CallDetectionService : Service() {
 
     private fun handleOutgoingCall(phoneNumber: String?) {
         serviceScope.launch {
-            val number = phoneNumber ?: getLatestNumberFromLog()
-            if (!number.isNullOrBlank()) {
+            val raw = resolveCallNumber(phoneNumber) ?: getLatestNumberFromLog()
+            val number = norm(raw)
+            if (number.isNotBlank()) {
+                persistCallNumber(raw)
                 // Record dialed number; OFFHOOK will mark answered for successful outgoing calls
                 lastOutgoingDialed[number] = System.currentTimeMillis()
                 android.util.Log.d(TAG, "Outgoing call started: $number")
@@ -1009,7 +1059,7 @@ class CallDetectionService : Service() {
         
             // Mark last seen call after initiating send
             autoReplyRepository.updateLastSeenCall(callId, contact?.id)
-            recentlySent[phoneNumber] = System.currentTimeMillis()
+            recentlySent[norm(phoneNumber)] = System.currentTimeMillis()
             com.avinashpatil.app.automessage.utils.SmsAntiSpamHelper.recordSentIfAllowed(this)
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Failed to send auto-reply to $phoneNumber", e)

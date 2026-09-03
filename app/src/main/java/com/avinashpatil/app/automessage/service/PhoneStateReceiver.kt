@@ -29,10 +29,19 @@ class PhoneStateReceiver : BroadcastReceiver() {
             when (intent.action) {
                 TelephonyManager.ACTION_PHONE_STATE_CHANGED -> {
                     val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE)
-                    Log.d(TAG, "Call state changed: $state")
+                    // EXTRA_INCOMING_NUMBER is the only number source on PHONE_STATE; without it
+                    // IDLE after process death cannot resolve who hung up (wasAnswered=false -> skip).
+                    val incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
+                        ?: intent.getStringExtra("incoming_number")
+                        ?: intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER)
+                    Log.d(TAG, "Call state changed: $state number=$incomingNumber")
+                    if (!incomingNumber.isNullOrBlank()) {
+                        persistLastTelecomNumber(context, incomingNumber)
+                    }
                     val serviceIntent = Intent(context, CallDetectionService::class.java).apply {
                         action = "CALL_STATE_CHANGED"
                         putExtra("state", state)
+                        putExtra("phone_number", incomingNumber)
                     }
                     startServiceSafely(context, serviceIntent)
                 }
@@ -40,6 +49,9 @@ class PhoneStateReceiver : BroadcastReceiver() {
                 "android.intent.action.NEW_OUTGOING_CALL" -> {
                     val phoneNumber = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER)
                     Log.d(TAG, "New outgoing call: $phoneNumber")
+                    if (!phoneNumber.isNullOrBlank()) {
+                        persistLastTelecomNumber(context, phoneNumber)
+                    }
                     val serviceIntent = Intent(context, CallDetectionService::class.java).apply {
                         action = "NEW_OUTGOING_CALL"
                         putExtra("phone_number", phoneNumber)
@@ -113,5 +125,24 @@ class PhoneStateReceiver : BroadcastReceiver() {
 
     private fun pendingFlags(): Int {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+    }
+
+    companion object {
+        private const val PREFS_TELECOM = "auto_message_prefs"
+        private const val KEY_LAST_TELECOM_NUMBER = "last_telecom_number"
+
+        fun persistLastTelecomNumber(context: Context, number: String) {
+            try {
+                context.getSharedPreferences(PREFS_TELECOM, Context.MODE_PRIVATE)
+                    .edit().putString(KEY_LAST_TELECOM_NUMBER, number).apply()
+            } catch (_: Exception) {}
+        }
+
+        fun getLastTelecomNumber(context: Context): String? {
+            return try {
+                context.getSharedPreferences(PREFS_TELECOM, Context.MODE_PRIVATE)
+                    .getString(KEY_LAST_TELECOM_NUMBER, null)
+            } catch (_: Exception) { null }
+        }
     }
 }

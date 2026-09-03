@@ -20,7 +20,7 @@ object DuplicatePreventer {
         getLastProcessedCallIds(ctx).lastOrNull()
 
     fun getLastSentTimestamp(ctx: Context, phoneNumber: String): Long =
-        prefs(ctx).getLong(KEY_LAST_SENT_PREFIX + phoneNumber, 0L)
+        prefs(ctx).getLong(KEY_LAST_SENT_PREFIX + PhoneNumberUtils.normalize(phoneNumber), 0L)
 
     fun hasSentRecently(ctx: Context, phoneNumber: String, windowMs: Long): Boolean {
         val last = getLastSentTimestamp(ctx, phoneNumber)
@@ -41,13 +41,13 @@ object DuplicatePreventer {
         if (ids.size > 20) ids.removeFirst()
         prefs(ctx).edit()
             .putString(KEY_LAST_CALL_IDS, ids.joinToString(","))
-            .putLong(KEY_LAST_SENT_PREFIX + phoneNumber, System.currentTimeMillis())
+            .putLong(KEY_LAST_SENT_PREFIX + PhoneNumberUtils.normalize(phoneNumber), System.currentTimeMillis())
             .apply()
     }
 
     fun markSent(ctx: Context, phoneNumber: String) {
         prefs(ctx).edit()
-            .putLong(KEY_LAST_SENT_PREFIX + phoneNumber, System.currentTimeMillis())
+            .putLong(KEY_LAST_SENT_PREFIX + PhoneNumberUtils.normalize(phoneNumber), System.currentTimeMillis())
             .apply()
     }
 }
