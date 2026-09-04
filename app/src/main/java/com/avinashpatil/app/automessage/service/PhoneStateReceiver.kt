@@ -12,6 +12,22 @@ import com.avinashpatil.app.automessage.utils.AutoMessagingStateChecker
 class PhoneStateReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "PhoneStateReceiver"
+        private const val PREFS_TELECOM = "auto_message_prefs"
+        private const val KEY_LAST_TELECOM_NUMBER = "last_telecom_number"
+
+        fun persistLastTelecomNumber(context: Context, number: String) {
+            try {
+                context.getSharedPreferences(PREFS_TELECOM, Context.MODE_PRIVATE)
+                    .edit().putString(KEY_LAST_TELECOM_NUMBER, number).apply()
+            } catch (_: Exception) {}
+        }
+
+        fun getLastTelecomNumber(context: Context): String? {
+            return try {
+                context.getSharedPreferences(PREFS_TELECOM, Context.MODE_PRIVATE)
+                    .getString(KEY_LAST_TELECOM_NUMBER, null)
+            } catch (_: Exception) { null }
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -125,24 +141,5 @@ class PhoneStateReceiver : BroadcastReceiver() {
 
     private fun pendingFlags(): Int {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
-    }
-
-    companion object {
-        private const val PREFS_TELECOM = "auto_message_prefs"
-        private const val KEY_LAST_TELECOM_NUMBER = "last_telecom_number"
-
-        fun persistLastTelecomNumber(context: Context, number: String) {
-            try {
-                context.getSharedPreferences(PREFS_TELECOM, Context.MODE_PRIVATE)
-                    .edit().putString(KEY_LAST_TELECOM_NUMBER, number).apply()
-            } catch (_: Exception) {}
-        }
-
-        fun getLastTelecomNumber(context: Context): String? {
-            return try {
-                context.getSharedPreferences(PREFS_TELECOM, Context.MODE_PRIVATE)
-                    .getString(KEY_LAST_TELECOM_NUMBER, null)
-            } catch (_: Exception) { null }
-        }
     }
 }
