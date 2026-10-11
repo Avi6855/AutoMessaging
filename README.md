@@ -60,7 +60,8 @@ Start reading here:
 - **Local data:** Room (SQLite) with 8 entities
 - **Telephony:** `SmsManager`, `PhoneStateReceiver`, foreground service (`specialUse` / `phoneCall`), call-log access
 - **Image loading:** Coil
-- **Testing:** JUnit (unit) + AndroidJUnit (instrumented) scaffolding
+- **Testing:** 24 JVM unit tests (JUnit4) over phone-number normalisation, anti-spam rules, message
+  personalisation and the Room repositories — see [Tests](#tests)
 
 ## Screenshots
 
@@ -88,7 +89,7 @@ Start reading here:
 
 ## Setup
 
-1. **Prerequisites**: Android Studio (Arctic Fox or later) and JDK 11+.
+1. **Prerequisites**: Android Studio (Arctic Fox or later) and JDK 17 (the app targets Java 17).
 2. **Clone**:
    ```bash
    git clone https://github.com/Avi6855/AutoMessaging.git
@@ -100,6 +101,21 @@ Start reading here:
    ```
    or click **Run 'app'** (`Shift+F10`).
 5. Grant the permissions below when asked, enable the master auto-reply switch, set your delay + default message — then test with a missed call.
+
+## Tests
+
+24 JVM unit tests cover the automation logic, so no device or emulator is needed:
+
+| Suite | What it pins down |
+|---|---|
+| `PhoneNumberUtilsTest` (7) | Number normalisation and matching (`9860080257` / `+919860080257` / `09860080257` resolve to one key) |
+| `SmsAntiSpamHelperTest` (9) | Per-hour and per-day send limits, `{name}` personalisation and the exact-message guarantee |
+| `MessageRepositoryImplTest` (4) | Template and message CRUD through the Room DAO |
+| `GroupRepositoryImplTest` (4) | Group / member grouping used to pick the reply template |
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
 
 ## Permissions used (and why)
 
