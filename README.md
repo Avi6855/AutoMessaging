@@ -109,9 +109,9 @@ Start reading here:
 | Suite | What it pins down |
 |---|---|
 | `PhoneNumberUtilsTest` (7) | Number normalisation and matching (`9860080257` / `+919860080257` / `09860080257` resolve to one key) |
-| `SmsAntiSpamHelperTest` (9) | Per-hour and per-day send limits, `{name}` personalisation and the exact-message guarantee |
-| `MessageRepositoryImplTest` (4) | Template and message CRUD through the Room DAO |
-| `GroupRepositoryImplTest` (4) | Group / member grouping used to pick the reply template |
+| `SmsAntiSpamHelperTest` (9) | The message is sent exactly as saved, `{name}` handling (casing, unknown callers, leftover spaces), jitter window and the carrier-safe per-hour/day limits |
+| `MessageRepositoryImplTest` (4) | Insert/delete through the DAO, generated ids, and switching the default template without leaving two defaults |
+| `GroupRepositoryImplTest` (4) | Group delete (present and missing), the default-message update path and the group count |
 
 ```bash
 ./gradlew :app:testDebugUnitTest
