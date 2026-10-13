@@ -1,5 +1,7 @@
 # AutoMessaging — Auto SMS Reply When a Call Ends
 
+![Android CI](https://github.com/Avi6855/AutoMessaging/actions/workflows/android-ci.yml/badge.svg)
+
 An Android app that **automatically sends an SMS message when a phone call ends**. If you miss a call or can't talk (driving, in a meeting), the caller gets an instant, polite text back — so no call ever goes unanswered in silence.
 
 ![Platform Banner](Auto_Messaging_App_Banner.png)
